@@ -168,7 +168,7 @@ class Flower{
     this._headPad=pad;this._headDim=dim;
   }
   draw(time){
-    const wx=noise.fbm(this.ws+time*.13,0,2)*14*this.wSens;
+    const wx=noise.fbm(this.ws+time*.13,0,2)*14*this.wSens+gustForce*this.wSens;
     const wa=noise.fbm(this.ws+100,time*.1,2)*.07*this.wSens;
     ctx.save();ctx.globalAlpha=this.opacity;
     if(this.stemP>0)this.drawStem(wx,wa);
@@ -800,7 +800,7 @@ class Particle{
 // ══════════════════════════════════════════
 class GrassBlade{
   constructor(x){this.x=x;this.y=groundY(x)+R(-3,8);this.h=R(12,50);this.curve=R(-10,10);this.w=R(1,2.8);this.hue=R(75,135);this.sat=R(30,60);this.lit=R(25,50);this.seed=R(0,1000);}
-  draw(time){if(!this._wt||time-this._wt>.05){this._wt=time;this._wx=noise.get(this.seed+time*.2,0)*8;}const wx=this._wx;ctx.strokeStyle=hsl(this.hue,this.sat,this.lit,.55);ctx.lineWidth=this.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.quadraticCurveTo(this.x+this.curve+wx,this.y-this.h*.6,this.x+this.curve*1.5+wx*1.5,this.y-this.h);ctx.stroke();}
+  draw(time){if(!this._wt||time-this._wt>.05){this._wt=time;this._wx=noise.get(this.seed+time*.2,0)*8;}const wx=this._wx+gustForce;ctx.strokeStyle=hsl(this.hue,this.sat,this.lit,.55);ctx.lineWidth=this.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.quadraticCurveTo(this.x+this.curve+wx,this.y-this.h*.6,this.x+this.curve*1.5+wx*1.5,this.y-this.h);ctx.stroke();}
 }
 
 // ══════════════════════════════════════════
@@ -1411,6 +1411,278 @@ class Snowfall{
 }
 
 // ══════════════════════════════════════════
+// SKY: CONSTELLATIONS
+// ══════════════════════════════════════════
+class Constellations{
+  constructor(){this.groups=[];for(let i=0,n=RI(5,8);i<n;i++){const cx=R(.1,.9),cy=R(.05,.7),st=[],c=RI(4,7);for(let j=0;j<c;j++)st.push({x:cx+R(-.08,.08),y:cy+R(-.06,.06)});const ln=[];for(let j=0;j<c-1;j++)ln.push([j,j+1]);if(c>4)ln.push([0,RI(2,c-1)]);this.groups.push({st,ln,a:R(.06,.15)});}}
+  draw(time){ctx.lineWidth=.4;for(const g of this.groups){const a=g.a*(.6+.4*Math.sin(time*.08));ctx.strokeStyle=`rgba(180,200,255,${a})`;ctx.beginPath();for(const[i,j] of g.ln){ctx.moveTo(g.st[i].x*W,g.st[i].y*HOR);ctx.lineTo(g.st[j].x*W,g.st[j].y*HOR);}ctx.stroke();ctx.fillStyle=`rgba(220,230,255,${a*1.8})`;ctx.beginPath();for(const s of g.st){ctx.moveTo(s.x*W+1.2,s.y*HOR);ctx.arc(s.x*W,s.y*HOR,1.2,0,6.28);}ctx.fill();}}
+}
+
+// ══════════════════════════════════════════
+// SKY: MILKY WAY
+// ══════════════════════════════════════════
+class MilkyWay{
+  constructor(){this.angle=R(.3,.6);this.off=R(-.15,.15);this.stars=[];for(let i=0;i<150;i++){const t=R(0,1),ac=R(-.12,.12);this.stars.push({t,ac,size:R(.2,1),a:R(.04,.18)});}}
+  draw(){for(const s of this.stars){const x=(s.t+s.ac*Math.sin(this.angle))*W;const y=(s.t*this.angle+s.ac*Math.cos(this.angle)+this.off+.15)*HOR;if(y<0||y>HOR||x<0||x>W)continue;ctx.beginPath();ctx.arc(x,y,s.size,0,6.28);ctx.fillStyle=`rgba(200,210,240,${s.a})`;ctx.fill();}}
+}
+
+// ══════════════════════════════════════════
+// SKY: SATELLITE
+// ══════════════════════════════════════════
+class Satellite{
+  constructor(){this.active=false;this.timer=R(180,300);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(180,300);const fl=Math.random()>.5;this.x=fl?-10:W+10;this.y=R(HOR*.05,HOR*.5);this.vx=(fl?1:-1)*R(50,90);this.vy=R(-3,3);}return;}this.x+=this.vx*dt;this.y+=this.vy*dt;if(this.x<-20||this.x>W+20)this.active=false;}
+  draw(){if(!this.active)return;ctx.beginPath();ctx.arc(this.x,this.y,1,0,6.28);ctx.fillStyle='rgba(255,255,255,.65)';ctx.fill();}
+}
+
+// ══════════════════════════════════════════
+// SKY: PLANET TRANSIT
+// ══════════════════════════════════════════
+class PlanetTransit{
+  constructor(){this.active=false;this.timer=R(300,600);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.x=-15;this.y=R(HOR*.08,HOR*.45);this.speed=R(3,8);this.size=R(3,5.5);this.hue=pick([30,45,200,350,15]);this.ring=Math.random()>.6;}return;}this.x+=this.speed*dt;if(this.x>W+20)this.active=false;}
+  draw(){if(!this.active)return;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,6.28);ctx.fillStyle=hsl(this.hue,40,65,.75);ctx.fill();if(this.ring){ctx.beginPath();ctx.ellipse(this.x,this.y,this.size*2.2,this.size*.35,.3,0,6.28);ctx.strokeStyle=hsl(this.hue,30,72,.35);ctx.lineWidth=.8;ctx.stroke();}}
+}
+
+// ══════════════════════════════════════════
+// SKY: BINARY STARS
+// ══════════════════════════════════════════
+class BinaryStars{
+  constructor(){this.pairs=[];for(let i=0;i<3;i++)this.pairs.push({cx:R(.1,.9),cy:R(.05,.55),d:R(3,6),sp:R(.5,1.5),ph:R(0,6.28),sz:R(.8,1.4),hue:pick([220,200,45,350]),a:R(.3,.55)});}
+  draw(time){for(const p of this.pairs){const a1=time*p.sp+p.ph,tw=.5+.5*Math.sin(time*2.5+p.ph);ctx.fillStyle=hsl(p.hue,30,85,p.a*tw);ctx.beginPath();ctx.arc(p.cx*W+Math.cos(a1)*p.d,p.cy*HOR+Math.sin(a1)*p.d*.4,p.sz,0,6.28);ctx.arc(p.cx*W+Math.cos(a1+Math.PI)*p.d,p.cy*HOR+Math.sin(a1+Math.PI)*p.d*.4,p.sz,0,6.28);ctx.fill();}}
+}
+
+// ══════════════════════════════════════════
+// SKY: WISHING STAR
+// ══════════════════════════════════════════
+class WishingStar{
+  constructor(){this.active=false;this.timer=R(200,400);this.time=0;this.phase='fly';this.trail=[];}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(200,400);this.time=0;this.phase='fly';this.x=R(W*.1,W*.8);this.y=R(HOR*.05,HOR*.35);this.vx=R(100,250);this.vy=R(30,80);this.trail=[];this.pauseAt=R(.5,1);this.pauseDur=R(1.5,2.5);}return;}
+    this.time+=dt;if(this.phase==='fly'){this.trail.push({x:this.x,y:this.y,a:1});this.x+=this.vx*dt;this.y+=this.vy*dt;this.vx*=.97;this.vy*=.97;if(this.time>this.pauseAt){this.phase='pause';this.time=0;}}else if(this.phase==='pause'){if(this.time>this.pauseDur){this.phase='fade';this.time=0;}}else{if(this.time>1.5)this.active=false;}for(const t of this.trail)t.a-=dt*2;this.trail=this.trail.filter(t=>t.a>0);}
+  draw(){if(!this.active)return;for(let i=1;i<this.trail.length;i++){const t=this.trail[i],p=this.trail[i-1];ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(t.x,t.y);ctx.strokeStyle=`rgba(255,255,255,${cl(t.a,0,1)*.4})`;ctx.lineWidth=1.5*t.a;ctx.stroke();}let a;if(this.phase==='fly')a=1;else if(this.phase==='pause')a=.8+.2*Math.sin(this.time*8);else a=1-this.time/1.5;if(a<.01)return;const glow=this.phase==='pause'?2:1;ctx.beginPath();ctx.arc(this.x,this.y,3*glow,0,6.28);ctx.fillStyle=`rgba(255,250,200,${a*.15*glow})`;ctx.fill();ctx.beginPath();ctx.arc(this.x,this.y,1.5,0,6.28);ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fill();}
+}
+
+// ══════════════════════════════════════════
+// SKY: NORTH STAR PULSE
+// ══════════════════════════════════════════
+class NorthStarPulse{
+  constructor(){this.timer=R(180,360);this.pulsing=false;this.time=0;this.x=R(W*.3,W*.7);this.y=R(HOR*.05,HOR*.2);}
+  update(dt){if(!this.pulsing){this.timer-=dt;if(this.timer<=0){this.pulsing=true;this.time=0;this.timer=R(180,360);}return;}this.time+=dt;if(this.time>5)this.pulsing=false;}
+  draw(){if(!this.pulsing)return;const a=Math.sin(this.time/5*Math.PI)*.6;ctx.beginPath();ctx.arc(this.x,this.y,6+a*4,0,6.28);ctx.fillStyle=`rgba(220,230,255,${a*.08})`;ctx.fill();ctx.beginPath();ctx.arc(this.x,this.y,2+a*2,0,6.28);ctx.fillStyle=`rgba(255,255,255,${.4+a*.5})`;ctx.fill();}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: OWL
+// ══════════════════════════════════════════
+class Owl{
+  constructor(){this.active=false;this.timer=R(60,120);this.blinkTimer=R(3,8);this.isBlinking=false;this.blinkDur=0;this.perchTime=0;this.flying=false;this.fx=0;this.fy=0;this.fvx=0;}
+  update(dt){
+    if(this.flying){this.fx+=this.fvx*dt;this.fy+=Math.sin(this.fx*.02)*2*dt;if(this.fx<-50||this.fx>W+50){this.flying=false;this.active=false;this.timer=R(60,120);}return;}
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.x=R(W*.1,W*.9);this.y=R(HOR+10,HOR+60);this.perchTime=R(15,40);}return;}
+    this.perchTime-=dt;this.blinkTimer-=dt;if(this.isBlinking){this.blinkDur-=dt;if(this.blinkDur<=0)this.isBlinking=false;}else if(this.blinkTimer<=0){this.isBlinking=true;this.blinkDur=R(.12,.2);this.blinkTimer=R(2,6);}
+    if(this.perchTime<=0){this.flying=true;this.fx=this.x;this.fy=this.y;this.fvx=(Math.random()>.5?1:-1)*R(60,120);}
+  }
+  draw(){
+    if(this.flying){const s=6;ctx.save();ctx.translate(this.fx,this.fy);if(this.fvx<0)ctx.scale(-1,1);ctx.fillStyle='rgba(30,25,20,.8)';ctx.beginPath();ctx.ellipse(0,0,s*.5,s*.7,0,0,6.28);ctx.fill();const wing=Math.sin(this.fx*.08)*s;ctx.beginPath();ctx.moveTo(0,-s*.2);ctx.quadraticCurveTo(s*1.2,-s*.5-wing,s*1.5,0);ctx.quadraticCurveTo(s*.8,s*.2,0,s*.1);ctx.fill();ctx.restore();return;}
+    if(!this.active)return;const s=5;ctx.save();ctx.translate(this.x,this.y);
+    ctx.fillStyle='rgba(50,40,30,.85)';ctx.beginPath();ctx.ellipse(0,0,s*.6,s*.9,0,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-s*.3,-s*.7);ctx.lineTo(-s*.5,-s*1.3);ctx.lineTo(-s*.1,-s*.8);ctx.fill();ctx.beginPath();ctx.moveTo(s*.3,-s*.7);ctx.lineTo(s*.5,-s*1.3);ctx.lineTo(s*.1,-s*.8);ctx.fill();
+    if(this.isBlinking){ctx.strokeStyle='rgba(200,180,80,.8)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(-s*.25,-s*.2);ctx.lineTo(-s*.05,-s*.2);ctx.moveTo(s*.05,-s*.2);ctx.lineTo(s*.25,-s*.2);ctx.stroke();}
+    else{ctx.fillStyle='rgba(220,200,50,.9)';ctx.beginPath();ctx.arc(-s*.15,-s*.2,s*.12,0,6.28);ctx.arc(s*.15,-s*.2,s*.12,0,6.28);ctx.fill();ctx.fillStyle='rgba(10,10,10,.9)';ctx.beginPath();ctx.arc(-s*.15,-s*.2,s*.06,0,6.28);ctx.arc(s*.15,-s*.2,s*.06,0,6.28);ctx.fill();}
+    ctx.fillStyle='rgba(180,160,80,.7)';ctx.beginPath();ctx.moveTo(-s*.06,-.05*s);ctx.lineTo(0,s*.15);ctx.lineTo(s*.06,-.05*s);ctx.fill();
+    ctx.strokeStyle='rgba(80,60,30,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-s*1.5,s*.9);ctx.lineTo(s*1.5,s*.9);ctx.stroke();ctx.restore();}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: FROG
+// ══════════════════════════════════════════
+class FrogSystem{
+  constructor(){this.frogs=[];this.timer=R(20,40);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(25,50);if(this.frogs.length<3)this.frogs.push({x:R(W*.05,W*.95),y:R(HOR+40,H*.9),ht:R(2,6),hop:false,hy:0,hvy:0,life:R(20,45),ct:R(5,12),croak:false,cTime:0});}
+    for(const f of this.frogs){f.life-=dt;f.ht-=dt;f.ct-=dt;if(f.hop){f.hvy+=120*dt;f.hy+=f.hvy*dt;if(f.hy>=0){f.hy=0;f.hop=false;f.ht=R(2,8);f.x+=R(-20,20);}}else if(f.ht<=0){f.hop=true;f.hvy=R(-80,-50);}if(f.croak){f.cTime+=dt;if(f.cTime>.8)f.croak=false;}else if(f.ct<=0){f.croak=true;f.cTime=0;f.ct=R(5,15);}}this.frogs=this.frogs.filter(f=>f.life>0);}
+  draw(){for(const f of this.frogs){const y=f.y+f.hy;ctx.save();ctx.translate(f.x,y);ctx.fillStyle='rgba(40,80,30,.7)';ctx.beginPath();ctx.ellipse(0,0,5,3.5,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-2.5,-2.5,1.5,0,6.28);ctx.arc(2.5,-2.5,1.5,0,6.28);ctx.fillStyle='rgba(50,90,35,.8)';ctx.fill();ctx.fillStyle='rgba(20,20,10,.8)';ctx.beginPath();ctx.arc(-2.5,-2.5,.7,0,6.28);ctx.arc(2.5,-2.5,.7,0,6.28);ctx.fill();if(f.croak){const r=f.cTime*40;ctx.strokeStyle=`rgba(150,200,150,${.3*(1-f.cTime/.8)})`;ctx.lineWidth=.5;ctx.beginPath();ctx.arc(0,0,r,0,6.28);ctx.stroke();}ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: SNAIL
+// ══════════════════════════════════════════
+class SnailSystem{
+  constructor(){this.snails=[];this.timer=R(30,60);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(35,70);if(this.snails.length<2)this.snails.push({x:R(W*.05,W*.95),y:R(HOR+30,H*.88),dir:Math.random()>.5?1:-1,trail:[],life:R(25,50)});}
+    for(const s of this.snails){s.x+=s.dir*3*dt;s.life-=dt;if(Math.random()<dt*.5)s.trail.push({x:s.x,y:s.y,a:1});for(const t of s.trail)t.a-=dt*.15;s.trail=s.trail.filter(t=>t.a>0);}this.snails=this.snails.filter(s=>s.life>0&&s.x>-20&&s.x<W+20);}
+  draw(){for(const s of this.snails){for(const t of s.trail){ctx.beginPath();ctx.arc(t.x,t.y,1,0,6.28);ctx.fillStyle=`rgba(180,200,160,${t.a*.15})`;ctx.fill();}ctx.save();ctx.translate(s.x,s.y);if(s.dir<0)ctx.scale(-1,1);ctx.fillStyle='rgba(140,120,80,.7)';ctx.beginPath();ctx.ellipse(2,0,4,2,0,0,6.28);ctx.fill();ctx.fillStyle='rgba(120,90,50,.8)';ctx.beginPath();ctx.arc(-1,-1,3,0,6.28);ctx.fill();ctx.strokeStyle='rgba(140,120,80,.6)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(4,-1);ctx.lineTo(6,-4);ctx.moveTo(3.5,-1);ctx.lineTo(5,-3.5);ctx.stroke();ctx.fillStyle='rgba(20,20,20,.6)';ctx.beginPath();ctx.arc(6,-4,.5,0,6.28);ctx.arc(5,-3.5,.5,0,6.28);ctx.fill();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: LADYBUG
+// ══════════════════════════════════════════
+class LadybugSystem{
+  constructor(){this.bugs=[];this.timer=R(15,30);}
+  update(dt,time){this.timer-=dt;if(this.timer<=0){this.timer=R(20,40);if(this.bugs.length<3)this.bugs.push({x:R(W*.1,W*.9),y:R(HOR+20,H*.85),vx:R(-8,8),vy:R(-5,5),life:R(10,25),seed:R(0,1000)});}
+    for(const b of this.bugs){b.x+=b.vx*dt+noise.get(b.seed+time*.2,0)*5*dt;b.y+=b.vy*dt;b.life-=dt;b.vx*=.99;b.vy*=.99;if(Math.random()<dt*.3){b.vx=R(-8,8);b.vy=R(-5,5);}}this.bugs=this.bugs.filter(b=>b.life>0);}
+  draw(){for(const b of this.bugs){ctx.save();ctx.translate(b.x,b.y);const s=2.5;ctx.fillStyle='rgba(200,30,20,.85)';ctx.beginPath();ctx.arc(0,0,s,0,6.28);ctx.fill();ctx.fillStyle='rgba(15,15,10,.8)';ctx.beginPath();ctx.arc(-s*.3,s*.1,s*.25,0,6.28);ctx.arc(s*.3,s*.1,s*.25,0,6.28);ctx.arc(0,-s*.3,s*.25,0,6.28);ctx.fill();ctx.fillStyle='rgba(15,15,10,.9)';ctx.beginPath();ctx.ellipse(0,-s*.7,s*.4,s*.3,0,0,6.28);ctx.fill();ctx.beginPath();ctx.moveTo(0,-s);ctx.lineTo(0,s);ctx.strokeStyle='rgba(15,15,10,.5)';ctx.lineWidth=.3;ctx.stroke();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: CAT SILHOUETTE
+// ══════════════════════════════════════════
+class CatSilhouette{
+  constructor(){this.active=false;this.timer=R(90,180);this.walking=false;this.walkDir=0;this.walkTime=0;this.sitTime=0;}
+  update(dt,time){
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.x=R(W*.1,W*.9);this.y=R(HOR+25,H*.85);this.sitTime=R(15,35);this.walking=false;}return;}
+    this.tailPhase=time;this.sitTime-=dt;if(this.walking){this.x+=this.walkDir*15*dt;this.walkTime-=dt;if(this.walkTime<=0||this.x<-30||this.x>W+30){this.active=false;this.timer=R(90,180);}}else if(this.sitTime<=0){this.walking=true;this.walkDir=Math.random()>.5?1:-1;this.walkTime=R(5,12);}
+  }
+  draw(){if(!this.active)return;const s=8;ctx.save();ctx.translate(this.x,this.y);
+    if(this.walking){if(this.walkDir<0)ctx.scale(-1,1);ctx.fillStyle='rgba(20,18,25,.75)';ctx.beginPath();ctx.ellipse(0,0,s*.8,s*.4,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-s*.5,-s*.5,s*.3,0,6.28);ctx.fill();ctx.beginPath();ctx.moveTo(-s*.6,-s*.7);ctx.lineTo(-s*.7,-s*1.1);ctx.lineTo(-s*.45,-s*.75);ctx.fill();ctx.beginPath();ctx.moveTo(-s*.35,-s*.7);ctx.lineTo(-s*.3,-s*1);ctx.lineTo(-s*.2,-s*.7);ctx.fill();const tw=Math.sin(this.tailPhase*3)*.4;ctx.beginPath();ctx.moveTo(s*.7,-.1*s);ctx.quadraticCurveTo(s*1.2,-s*.3+tw*s,s*1.4,-s*.6+tw*s);ctx.strokeStyle='rgba(20,18,25,.75)';ctx.lineWidth=1.5;ctx.stroke();}
+    else{ctx.fillStyle='rgba(20,18,25,.75)';ctx.beginPath();ctx.ellipse(0,s*.1,s*.35,s*.5,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(0,-s*.5,s*.3,0,6.28);ctx.fill();ctx.beginPath();ctx.moveTo(-s*.2,-s*.7);ctx.lineTo(-s*.35,-s*1.1);ctx.lineTo(-s*.05,-s*.75);ctx.fill();ctx.beginPath();ctx.moveTo(s*.2,-s*.7);ctx.lineTo(s*.35,-s*1.1);ctx.lineTo(s*.05,-s*.75);ctx.fill();ctx.fillStyle='rgba(180,200,80,.5)';ctx.beginPath();ctx.ellipse(-s*.1,-s*.5,s*.06,s*.04,0,0,6.28);ctx.ellipse(s*.1,-s*.5,s*.06,s*.04,0,0,6.28);ctx.fill();const tw=Math.sin(this.tailPhase*1.5)*.3;ctx.beginPath();ctx.moveTo(s*.3,s*.3);ctx.quadraticCurveTo(s*.7,tw*s,s*.9,-s*.3+tw*s);ctx.strokeStyle='rgba(20,18,25,.75)';ctx.lineWidth=1.5;ctx.stroke();}ctx.restore();}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: DRAGONFLY
+// ══════════════════════════════════════════
+class DragonflySystem{
+  constructor(){this.flies=[];this.timer=R(20,40);}
+  update(dt,time){this.timer-=dt;if(this.timer<=0){this.timer=R(25,45);if(this.flies.length<2){const x=R(W*.1,W*.9),y=R(HOR*.8,H*.7);this.flies.push({x,y,tx:x+R(-80,80),ty:y+R(-40,40),speed:R(40,80),wp:R(0,6.28),life:R(12,25),seed:R(0,1000)});}}
+    for(const d of this.flies){d.wp+=18*dt;const dx=d.tx-d.x,dy=d.ty-d.y,dist=Math.sqrt(dx*dx+dy*dy);if(dist>2){d.x+=(dx/dist)*d.speed*dt;d.y+=(dy/dist)*d.speed*dt;}if(dist<10||Math.random()<dt*.3){d.tx=d.x+R(-100,100);d.ty=cl(d.y+R(-50,50),HOR*.6,H*.8);}d.life-=dt;}this.flies=this.flies.filter(d=>d.life>0);}
+  draw(time){for(const d of this.flies){const a=cl(d.life/2,0,1)*.8,s=5;ctx.save();ctx.translate(d.x,d.y);ctx.globalAlpha=a;ctx.fillStyle='rgba(30,60,80,.8)';ctx.beginPath();ctx.ellipse(0,0,s*.15,s*.6,0,0,6.28);ctx.fill();const wf=Math.sin(d.wp)*.3+.7;const hue=180+Math.sin(time*2+d.seed)*30;ctx.fillStyle=hsl(hue,40,70,.3*wf);ctx.beginPath();ctx.ellipse(-s*.4,-s*.1*wf,s*.7,s*.15,-.2,0,6.28);ctx.ellipse(s*.4,-s*.1*wf,s*.7,s*.15,.2,0,6.28);ctx.fill();ctx.fillStyle=hsl(hue+20,35,65,.25*wf);ctx.beginPath();ctx.ellipse(-s*.3,s*.15*wf,s*.55,s*.12,-.1,0,6.28);ctx.ellipse(s*.3,s*.15*wf,s*.55,s*.12,.1,0,6.28);ctx.fill();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// CREATURES: WORM
+// ══════════════════════════════════════════
+class WormSystem{
+  constructor(){this.worms=[];this.timer=R(25,50);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(20,45);if(this.worms.length<2)this.worms.push({x:R(W*.1,W*.9),y:R(HOR+30,H*.9),time:0,duration:R(2,4),maxH:R(8,16)});}for(const w of this.worms)w.time+=dt;this.worms=this.worms.filter(w=>w.time<w.duration);}
+  draw(){for(const w of this.worms){const t=w.time/w.duration;let rise;if(t<.3)rise=ease.out(t/.3);else if(t<.6)rise=1;else rise=1-ease.in((t-.6)/.4);const h=w.maxH*rise;ctx.save();ctx.translate(w.x,w.y);ctx.strokeStyle='rgba(180,140,120,.7)';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(3,-h*.5,Math.sin(w.time*5)*3,-h);ctx.stroke();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// GROUND: GLOWING MUSHROOMS
+// ══════════════════════════════════════════
+class GlowMushrooms{
+  constructor(){this.clusters=[];this.timer=R(20,50);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(25,55);if(this.clusters.length<4){const cx=R(W*.05,W*.95),cy=R(HOR+30,H*.9),shrooms=[];for(let i=0,n=RI(2,5);i<n;i++)shrooms.push({ox:R(-12,12),oy:R(-4,4),size:R(3,7),hue:pick([140,160,180,280,300]),ph:R(0,6.28)});this.clusters.push({x:cx,y:cy,shrooms,life:R(30,70)});}}for(const c of this.clusters)c.life-=dt;this.clusters=this.clusters.filter(c=>c.life>0);}
+  draw(time){for(const c of this.clusters){const fade=cl(c.life<3?c.life/3:1,0,1);for(const m of c.shrooms){const x=c.x+m.ox,y=c.y+m.oy,s=m.size,pulse=.6+.4*Math.sin(time*1.5+m.ph),a=fade*pulse;const gg=ctx.createRadialGradient(x,y-s*.5,0,x,y-s*.5,s*3);gg.addColorStop(0,hsl(m.hue,50,60,a*.12));gg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(x,y-s*.5,s*3,0,6.28);ctx.fillStyle=gg;ctx.fill();ctx.fillStyle=hsl(m.hue-20,20,75,a*.6);ctx.fillRect(x-s*.12,y-s*.3,s*.24,s*.5);ctx.beginPath();ctx.ellipse(x,y-s*.4,s*.5,s*.35,0,Math.PI,0);ctx.fillStyle=hsl(m.hue,45,55,a*.8);ctx.fill();ctx.fillStyle=hsl(m.hue,30,80,a*.5);ctx.beginPath();ctx.arc(x-s*.15,y-s*.55,s*.08,0,6.28);ctx.arc(x+s*.2,y-s*.5,s*.06,0,6.28);ctx.fill();}}}
+}
+
+// ══════════════════════════════════════════
+// GROUND: POND
+// ══════════════════════════════════════════
+class Pond{
+  constructor(){this.x=R(W*.15,W*.85);this.y=R(HOR+55,H*.88);this.w=R(40,80);this.h=R(15,25);this.ripples=[];this.rt=R(2,6);}
+  update(dt){this.rt-=dt;if(this.rt<=0){this.rt=R(3,8);this.ripples.push({x:this.x+R(-this.w*.3,this.w*.3),y:this.y+R(-this.h*.2,this.h*.2),r:0,a:1});}for(const r of this.ripples){r.r+=15*dt;r.a-=dt*.4;}this.ripples=this.ripples.filter(r=>r.a>0);}
+  draw(time){ctx.save();ctx.beginPath();ctx.ellipse(this.x,this.y,this.w*.55,this.h*.55,0,0,6.28);ctx.clip();const wg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.w*.5);wg.addColorStop(0,hsl(210,25,18,.6));wg.addColorStop(.7,hsl(215,30,14,.7));wg.addColorStop(1,hsl(220,20,12,.5));ctx.fillStyle=wg;ctx.fillRect(this.x-this.w,this.y-this.h,this.w*2,this.h*2);const shim=Math.sin(time*.8)*.3;ctx.fillStyle=`rgba(200,210,240,${.06+shim*.02})`;for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(this.x+Math.sin(i*2.1+time*.2)*this.w*.3,this.y+Math.cos(i*1.7+time*.15)*this.h*.2,1,0,6.28);ctx.fill();}for(const r of this.ripples){ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,6.28);ctx.strokeStyle=`rgba(180,200,220,${r.a*.2})`;ctx.lineWidth=.5;ctx.stroke();}ctx.restore();ctx.beginPath();ctx.ellipse(this.x,this.y,this.w*.55,this.h*.55,0,0,6.28);ctx.strokeStyle='rgba(60,80,50,.3)';ctx.lineWidth=1.5;ctx.stroke();}
+}
+
+// ══════════════════════════════════════════
+// GROUND: SPIDER WEB
+// ══════════════════════════════════════════
+class SpiderWeb{
+  constructor(){this.webs=[];this.timer=R(40,80);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(45,90);if(this.webs.length<2)this.webs.push({x:R(W*.1,W*.9),y:R(HOR+20,HOR+80),size:R(12,22),life:R(40,80),seed:R(0,1000)});}for(const w of this.webs)w.life-=dt;this.webs=this.webs.filter(w=>w.life>0);}
+  draw(time){for(const w of this.webs){const a=cl(w.life<3?w.life/3:1,0,1)*.35,s=w.size,sway=noise.get(w.seed+time*.15,0)*2;ctx.save();ctx.translate(w.x+sway,w.y);ctx.strokeStyle=`rgba(220,220,240,${a})`;ctx.lineWidth=.3;ctx.beginPath();for(let i=0;i<8;i++){const an=i*Math.PI/4;ctx.moveTo(0,0);ctx.lineTo(Math.cos(an)*s,Math.sin(an)*s);}ctx.stroke();ctx.beginPath();for(let r=s*.2;r<s;r+=s*.15){for(let i=0;i<8;i++){const a1=i*Math.PI/4,a2=(i+1)*Math.PI/4,wb=Math.sin(r+i)*.08;ctx.moveTo(Math.cos(a1)*(r+wb*s),Math.sin(a1)*(r+wb*s));ctx.lineTo(Math.cos(a2)*(r+wb*s),Math.sin(a2)*(r+wb*s));}}ctx.stroke();ctx.fillStyle=`rgba(200,220,255,${a*1.5})`;ctx.beginPath();for(let i=0;i<8;i++){const an=i*Math.PI/4;for(let r2=s*.3;r2<s;r2+=s*.25){const dx=Math.cos(an)*r2,dy=Math.sin(an)*r2;ctx.moveTo(dx+.8,dy);ctx.arc(dx,dy,.8,0,6.28);}}ctx.fill();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// GROUND: CLOVER PATCH
+// ══════════════════════════════════════════
+class CloverPatch{
+  constructor(){this.patches=[];for(let i=0;i<RI(1,3);i++){const clovers=[],cx=R(W*.05,W*.95),cy=R(HOR+30,H*.9);for(let j=0;j<RI(5,12);j++)clovers.push({x:cx+R(-20,20),y:cy+R(-8,8),size:R(2,3.5),rot:R(0,6.28),four:Math.random()<.02});this.patches.push(clovers);}}
+  draw(time){for(const patch of this.patches){for(const c of patch){const s=c.size,sw=Math.sin(time*.5+c.x*.1)*1.5;ctx.save();ctx.translate(c.x+sw,c.y);ctx.rotate(c.rot);ctx.strokeStyle='rgba(60,120,40,.4)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,s*1.5);ctx.stroke();const leaves=c.four?4:3;ctx.fillStyle=c.four?'rgba(50,160,50,.6)':'rgba(50,120,40,.45)';for(let i=0;i<leaves;i++){ctx.save();ctx.rotate(i*(6.28/leaves));ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-s*.3,-s*.2,-s*.4,-s*.7,0,-s*.6);ctx.bezierCurveTo(s*.4,-s*.7,s*.3,-s*.2,0,0);ctx.fill();ctx.restore();}ctx.restore();}}}
+}
+
+// ══════════════════════════════════════════
+// GROUND: FALLEN LOG
+// ══════════════════════════════════════════
+class FallenLog{
+  constructor(){this.x=R(W*.15,W*.85);this.y=R(HOR+45,H*.85);this.w=R(40,70);this.rot=R(-.1,.1);this.moss=[];for(let i=0;i<4;i++)this.moss.push({ox:R(-this.w*.4,this.w*.3),sz:R(3,6),szh:R(1,3),r:R(-.3,.3)});}
+  draw(){ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rot);ctx.fillStyle='rgba(80,55,30,.6)';ctx.beginPath();ctx.ellipse(0,0,this.w*.5,4,0,0,6.28);ctx.fill();ctx.fillStyle='rgba(60,45,25,.7)';ctx.beginPath();ctx.arc(-this.w*.5,0,5,0,6.28);ctx.fill();ctx.fillStyle='rgba(50,80,30,.3)';for(const m of this.moss){ctx.beginPath();ctx.ellipse(m.ox,-3,m.sz,m.szh,m.r,0,6.28);ctx.fill();}ctx.restore();}
+}
+
+// ══════════════════════════════════════════
+// WEATHER: RAIN
+// ══════════════════════════════════════════
+class RainEvent{
+  constructor(){this.active=false;this.timer=R(600,1200);this.drops=[];this.time=0;this.duration=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1200);this.time=0;this.duration=R(15,30);this.drops=[];for(let i=0;i<180;i++)this.drops.push({x:R(-20,W+20),y:R(-H,H),speed:R(300,500),len:R(8,18),drift:R(-15,5)});}return;}this.time+=dt;const t=this.time/this.duration,I=t<.1?ease.out(t/.1):t>.8?1-ease.in((t-.8)/.2):1;for(const d of this.drops){d.y+=d.speed*I*dt;d.x+=d.drift*dt;if(d.y>H+10){d.y=-d.len;d.x=R(-20,W+20);}}if(this.time>=this.duration){this.active=false;this.drops=[];}}
+  draw(){if(!this.active)return;const t=this.time/this.duration,I=t<.1?ease.out(t/.1):t>.8?1-ease.in((t-.8)/.2):1;ctx.fillStyle=`rgba(100,120,140,${I*.04})`;ctx.fillRect(0,0,W,H);ctx.strokeStyle=`rgba(180,200,220,${I*.25})`;ctx.lineWidth=.5;ctx.beginPath();for(const d of this.drops){ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+d.drift*.03,d.y+d.len);}ctx.stroke();}
+}
+
+// ══════════════════════════════════════════
+// WEATHER: DISTANT LIGHTNING
+// ══════════════════════════════════════════
+class DistantLightning{
+  constructor(){this.timer=R(120,300);this.flash=0;this.flashX=0;}
+  update(dt){this.timer-=dt;if(this.flash>0)this.flash-=dt;if(this.timer<=0){this.timer=R(120,300);this.flash=R(.1,.25);this.flashX=R(W*.1,W*.9);}}
+  draw(){if(this.flash<=0)return;const a=this.flash/.25;const lg=ctx.createLinearGradient(0,HOR*.6,0,HOR);lg.addColorStop(0,'rgba(0,0,0,0)');lg.addColorStop(.5,`rgba(200,200,255,${a*.06})`);lg.addColorStop(1,`rgba(200,200,255,${a*.12})`);ctx.fillStyle=lg;ctx.fillRect(this.flashX-W*.15,HOR*.5,W*.3,HOR*.5);}
+}
+
+// ══════════════════════════════════════════
+// WEATHER: FOG BANK
+// ══════════════════════════════════════════
+class FogBank{
+  constructor(){this.active=false;this.timer=R(200,400);this.time=0;this.duration=0;this.blobs=[];}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(200,400);this.time=0;this.duration=R(20,40);this.x=-W*.3;this.blobs=[];for(let i=0;i<4;i++)this.blobs.push({ox:i*W*.25,oy:i*15,r:R(80,160)});}return;}this.time+=dt;this.x+=8*dt;if(this.time>=this.duration)this.active=false;}
+  draw(){if(!this.active)return;const t=this.time/this.duration,a=t<.15?ease.out(t/.15):t>.8?1-ease.in((t-.8)/.2):.35;for(const b of this.blobs){const fx=this.x+b.ox,fy=HOR+30+b.oy;const fg=ctx.createRadialGradient(fx,fy,0,fx,fy,b.r);fg.addColorStop(0,`rgba(160,170,150,${a*.08})`);fg.addColorStop(1,'rgba(160,170,150,0)');ctx.beginPath();ctx.arc(fx,fy,b.r,0,6.28);ctx.fillStyle=fg;ctx.fill();}}
+}
+
+// ══════════════════════════════════════════
+// WEATHER: WIND GUST
+// ══════════════════════════════════════════
+let gustForce=0;
+class WindGust{
+  constructor(){this.active=false;this.timer=R(60,120);this.time=0;this.duration=3;this.dir=1;}
+  update(dt){if(!this.active){gustForce=0;this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(60,120);this.time=0;this.dir=Math.random()>.5?1:-1;}return;}this.time+=dt;if(this.time>=this.duration){this.active=false;gustForce=0;return;}const t=this.time/this.duration;gustForce=(t<.3?ease.out(t/.3):1-ease.in((t-.3)/.7))*this.dir*25;}
+}
+
+// ══════════════════════════════════════════
+// RARE: PAPER LANTERN (single)
+// ══════════════════════════════════════════
+class PaperLanternSingle{
+  constructor(){this.active=false;this.timer=R(120,240);}
+  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(120,240);this.x=R(W*.2,W*.8);this.y=H*.85;this.vy=-12;this.seed=R(0,1000);this.life=R(20,35);}return;}this.x+=noise.get(this.seed+time*.05,0)*8*dt;this.y+=this.vy*dt;this.vy+=(-22-this.vy)*.01;this.life-=dt;if(this.life<=0||this.y<-30)this.active=false;}
+  draw(time){if(!this.active)return;const a=cl(this.life/3,0,1),s=6,flicker=.7+.3*Math.sin(time*7+this.seed);ctx.save();ctx.translate(this.x,this.y);ctx.globalAlpha=a;const gg=ctx.createRadialGradient(0,0,s*.3,0,0,s*3.5);gg.addColorStop(0,`rgba(255,180,60,${flicker*.15})`);gg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(0,0,s*3.5,0,6.28);ctx.fillStyle=gg;ctx.fill();ctx.beginPath();ctx.moveTo(-s*.35,-s*.6);ctx.bezierCurveTo(-s*.4,-s*.3,-s*.4,s*.3,-s*.25,s*.5);ctx.lineTo(s*.25,s*.5);ctx.bezierCurveTo(s*.4,s*.3,s*.4,-s*.3,s*.35,-s*.6);ctx.closePath();ctx.fillStyle=`rgba(255,200,100,${flicker*.8})`;ctx.fill();ctx.restore();}
+}
+
+// ══════════════════════════════════════════
+// RARE: FIREFLY SWARM
+// ══════════════════════════════════════════
+class FireflySwarm{
+  constructor(){this.active=false;this.timer=R(300,600);this.flies=[];this.time=0;this.phase='gather';}
+  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.time=0;this.phase='gather';this.cx=R(W*.2,W*.8);this.cy=R(HOR+30,H*.7);this.flies=[];for(let i=0;i<30;i++)this.flies.push({x:this.cx+R(-100,100),y:this.cy+R(-60,60),tx:0,ty:0,seed:R(0,1000)});}return;}
+    this.time+=dt;const pd=this.phase==='gather'?4:this.phase==='shape'?5:3;if(this.time>pd){if(this.phase==='gather'){this.phase='shape';this.time=0;const ga=Math.PI*(3-Math.sqrt(5));for(let i=0;i<this.flies.length;i++){const a=i*ga,r=Math.sqrt(i/this.flies.length)*25;this.flies[i].tx=this.cx+Math.cos(a)*r;this.flies[i].ty=this.cy+Math.sin(a)*r;}}else if(this.phase==='shape'){this.phase='scatter';this.time=0;for(const f of this.flies){f.tx=f.x+R(-120,120);f.ty=f.y+R(-80,80);}}else{this.active=false;return;}}
+    for(const f of this.flies){const tx=this.phase==='gather'?this.cx+R(-20,20):f.tx,ty=this.phase==='gather'?this.cy+R(-15,15):f.ty;f.x+=(tx-f.x)*.03;f.y+=(ty-f.y)*.03;f.x+=noise.get(f.seed+time*.3,0)*5*dt;f.y+=noise.get(0,f.seed+time*.3)*4*dt;}}
+  draw(time){if(!this.active)return;for(const f of this.flies){const blink=Math.pow(Math.max(0,Math.sin(time*2+f.seed)),2);ctx.beginPath();ctx.arc(f.x,f.y,1.5,0,6.28);ctx.fillStyle=`rgba(180,220,80,${blink*.7})`;ctx.fill();if(blink>.5){ctx.beginPath();ctx.arc(f.x,f.y,4,0,6.28);ctx.fillStyle=`rgba(180,220,80,${blink*.1})`;ctx.fill();}}}
+}
+
+// ══════════════════════════════════════════
+// RARE: DISTANT TRAIN
+// ══════════════════════════════════════════
+class DistantTrain{
+  constructor(){this.active=false;this.timer=R(300,600);this.cars=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.cars=RI(4,8);const fl=Math.random()>.5;this.x=fl?-this.cars*18-20:W+20;this.speed=(fl?1:-1)*R(15,30);this.y=HOR+R(2,12);}return;}this.x+=this.speed*dt;if((this.speed>0&&this.x>W+50)||(this.speed<0&&this.x<-this.cars*18-50))this.active=false;}
+  draw(){if(!this.active)return;ctx.save();ctx.translate(this.x,this.y);for(let i=0;i<this.cars;i++){const cx=i*16;ctx.fillStyle='rgba(30,25,20,.25)';ctx.fillRect(cx,0,14,5);ctx.fillStyle='rgba(255,220,140,.2)';ctx.fillRect(cx+2,1,3,2.5);ctx.fillRect(cx+7,1,3,2.5);ctx.fillStyle='rgba(40,35,25,.25)';ctx.beginPath();ctx.arc(cx+3,5.5,1.2,0,6.28);ctx.arc(cx+11,5.5,1.2,0,6.28);ctx.fill();}ctx.restore();}
+}
+
+// ══════════════════════════════════════════
+// RARE: MUSIC NOTES
+// ══════════════════════════════════════════
+class MusicNotes{
+  constructor(){this.notes=[];this.timer=R(120,240);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(120,240);const x=R(W*.1,W*.9),y=R(HOR+40,H*.8);for(let i=0;i<RI(3,6);i++)this.notes.push({x:x+R(-10,10),y,vx:R(-8,8),vy:R(-20,-35),life:R(3,6),size:R(3,5),hue:pick([45,200,300,340]),delay:i*R(.3,.6)});}for(const n of this.notes){if(n.delay>0){n.delay-=dt;continue;}n.x+=n.vx*dt;n.y+=n.vy*dt;n.life-=dt;}this.notes=this.notes.filter(n=>n.life>0||n.delay>0);}
+  draw(){for(const n of this.notes){if(n.delay>0)continue;const a=cl(n.life/1.5,0,1)*.6,s=n.size;ctx.save();ctx.translate(n.x,n.y);ctx.fillStyle=hsl(n.hue,50,70,a);ctx.beginPath();ctx.ellipse(0,0,s*.4,s*.3,.3,0,6.28);ctx.fill();ctx.strokeStyle=hsl(n.hue,50,70,a);ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(s*.3,-s*.1);ctx.lineTo(s*.3,-s*1.2);ctx.stroke();ctx.restore();}}
+}
+
+// ══════════════════════════════════════════
+// RARE: LIGHTHOUSE
+// ══════════════════════════════════════════
+class Lighthouse{
+  constructor(){this.active=false;this.timer=R(240,480);this.side=1;this.sa=0;this.time=0;this.duration=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(240,480);this.side=Math.random()>.5?1:-1;this.time=0;this.duration=R(15,30);}return;}this.time+=dt;this.sa+=.8*dt;if(this.time>=this.duration)this.active=false;}
+  draw(){if(!this.active)return;const t=this.time/this.duration,a=t<.15?ease.out(t/.15):t>.85?1-ease.in((t-.85)/.15):.15;const bx=this.side>0?W+5:-5,by=HOR+10,beam=Math.sin(this.sa);if(beam<0)return;ctx.save();ctx.globalAlpha=a*beam;const angle=this.side>0?Math.PI-.4+beam*.3:.4+Math.PI-beam*.3;const len=W*.6,ex=bx+Math.cos(angle)*len,ey=by+Math.sin(angle)*len;const bg=ctx.createLinearGradient(bx,by,ex,ey);bg.addColorStop(0,'rgba(255,250,200,.06)');bg.addColorStop(.5,'rgba(255,250,200,.02)');bg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ex-25,ey);ctx.lineTo(ex+25,ey);ctx.closePath();ctx.fillStyle=bg;ctx.fill();ctx.restore();}
+}
+
+// ══════════════════════════════════════════
 // GARDEN ORCHESTRATOR
 // ══════════════════════════════════════════
 class Garden{
@@ -1422,9 +1694,20 @@ class Garden{
     this.starField=new StarField();this.starBloom=new StarBloom();this.shootingStars=new ShootingStars();
     this.moon=new Moon();this.moonBiker=new MoonBiker();this.cometSystem=new CometSystem();this.supernovaSystem=new SupernovaSystem();
     this.nebulaWisps=new NebulaWisps();this.birdFlock=new BirdFlock();this.aurora=new Aurora();this.rainbow=new Rainbow();
+    this.constellations=new Constellations();this.milkyWay=new MilkyWay();this.satellite=new Satellite();
+    this.planet=new PlanetTransit();this.binaryStars=new BinaryStars();this.wishingStar=new WishingStar();this.northStar=new NorthStarPulse();
 
     // Ground
     this.diglett=new Diglett();this.fireflies=new Fireflies();this.dandelionBursts=new DandelionBursts();
+    this.glowMushrooms=new GlowMushrooms();this.pond=new Pond();this.spiderWeb=new SpiderWeb();
+    this.cloverPatch=new CloverPatch();this.fallenLog=new FallenLog();
+
+    // Creatures
+    this.owl=new Owl();this.frogSystem=new FrogSystem();this.snailSystem=new SnailSystem();
+    this.ladybugSystem=new LadybugSystem();this.cat=new CatSilhouette();this.dragonflySystem=new DragonflySystem();this.wormSystem=new WormSystem();
+
+    // Weather
+    this.rainEvent=new RainEvent();this.lightning=new DistantLightning();this.fogBank=new FogBank();this.windGust=new WindGust();
 
     // Rare events
     this.blossomStorm=new BlossomStorm();
@@ -1437,6 +1720,8 @@ class Garden{
     this.eclipse=new Eclipse();
     this.ufoSystem=new UFO();
     this.snowfall=new Snowfall();
+    this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
+    this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
     this.waveTimer=R(3,7);
@@ -1493,12 +1778,21 @@ class Garden{
     this.starBloom.update(dt,this.time);this.shootingStars.update(dt);this.moon.update(dt);this.moonBiker.update(dt,this.moon);
     this.cometSystem.update(dt,this.time);this.supernovaSystem.update(dt);
     this.birdFlock.update(dt,this.time);this.aurora.update(dt,this.time);this.rainbow.update(dt);
+    this.satellite.update(dt);this.planet.update(dt);this.wishingStar.update(dt);this.northStar.update(dt);
 
     // Ground
     for(const p of this.particles)p.update(dt,this.time);
     for(const b of this.butterflies)b.update(dt,this.time);
     for(const b of this.bees)b.update(dt,this.time);
     this.diglett.update(dt,this.time);this.fireflies.update(dt,this.time);this.dandelionBursts.update(dt,this.time);
+    this.glowMushrooms.update(dt);this.pond.update(dt);this.spiderWeb.update(dt);this.wormSystem.update(dt);
+
+    // Creatures
+    this.owl.update(dt);this.frogSystem.update(dt);this.snailSystem.update(dt);
+    this.ladybugSystem.update(dt,this.time);this.cat.update(dt,this.time);this.dragonflySystem.update(dt,this.time);
+
+    // Weather
+    this.rainEvent.update(dt);this.lightning.update(dt);this.fogBank.update(dt);this.windGust.update(dt);
 
     // Rare events
     this.blossomStorm.update(dt,this.time);
@@ -1511,45 +1805,76 @@ class Garden{
     this.eclipse.update(dt);
     this.ufoSystem.update(dt,this.time);
     this.snowfall.update(dt,this.time);
+    this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
+    this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);
   }
 
   draw(){
     // SKY
     this.drawSky();
+    this.milkyWay.draw();
     this.nebulaWisps.draw(this.time);
+    this.constellations.draw(this.time);
     this.aurora.draw(this.time);
     this.starField.draw(this.time);
+    this.binaryStars.draw(this.time);
     this.starBloom.draw(this.time);
+    this.northStar.draw();
     this.cometSystem.draw();
     this.supernovaSystem.draw();
     this.shootingStars.draw();
+    this.wishingStar.draw();
+    this.satellite.draw();
+    this.planet.draw();
     this.moon.draw();this.moonBiker.draw();
     this.rainbow.draw();
     this.skyWhale.draw(this.time);
     this.hotAirBalloon.draw(this.time);
     this.ufoSystem.draw(this.time);
     this.birdFlock.draw();
+    this.distantTrain.draw();
 
     // GROUND
     this.drawHills();
+    this.pond.draw(this.time);
+    this.fallenLog.draw();
+    this.cloverPatch.draw(this.time);
     for(const g of this.grass){if(g.y>H*.78)g.draw(this.time);}
     for(const p of this.particles){if(p.type==='pollen')p.draw(this.time);}
     for(const f of this.flowers)f.draw(this.time);
     this.diglett.draw(this.time);
+    this.wormSystem.draw();
+    this.spiderWeb.draw(this.time);
     for(const g of this.grass){if(g.y<=H*.78)g.draw(this.time);}
     for(const p of this.particles){if(p.type!=='pollen')p.draw(this.time);}
+    this.glowMushrooms.draw(this.time);
     this.dandelionBursts.draw(this.time);
     for(const b of this.butterflies)b.draw();
     for(const b of this.bees)b.draw();
+    this.owl.draw();
+    this.frogSystem.draw();
+    this.snailSystem.draw();
+    this.ladybugSystem.draw();
+    this.cat.draw();
+    this.dragonflySystem.draw(this.time);
     this.fireflies.draw(this.time);
+    this.fireflySwarm.draw(this.time);
     this.willOWisp.draw(this.time);
+    this.musicNotes.draw();
     this.blossomStorm.draw();
     this.lanternFestival.draw(this.time);
+    this.paperLantern.draw(this.time);
     this.drawMist();
+    this.fogBank.draw();
+    this.lighthouse.draw();
     this.drawSunlight();
     // Post-processing overlays (on top of everything)
     this.eclipse.draw();
+    this.lightning.draw();
     this.snowfall.draw();
+    this.rainEvent.draw();
+    // Cursor firefly
+    if(mouseX>0&&mouseY>0){const pulse=.5+.5*Math.sin(this.time*4);ctx.beginPath();ctx.arc(mouseX,mouseY,8,0,6.28);ctx.fillStyle=`rgba(180,220,80,${pulse*.06})`;ctx.fill();ctx.beginPath();ctx.arc(mouseX,mouseY,2,0,6.28);ctx.fillStyle=`rgba(200,240,100,${pulse*.5})`;ctx.fill();}
   }
 
   drawSky(){
@@ -1597,6 +1922,14 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 window.addEventListener('resize',()=>{resize();garden.initGrass();garden._skyGrad=null;});
+// ── INTERACTIVE ──
+let mouseX=-100,mouseY=-100;
+canvas.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;});
+canvas.addEventListener('mouseleave',()=>{mouseX=-100;mouseY=-100;});
+canvas.addEventListener('click',e=>{const x=e.clientX,y=e.clientY;if(y>HOR+10){const ds=.3+(y-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(x,y,ds*R(.65,1.3)));}});
+canvas.addEventListener('touchstart',e=>{const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;},{passive:true});
+canvas.addEventListener('touchmove',e=>{const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;},{passive:true});
+canvas.addEventListener('touchend',e=>{if(mouseY>HOR+10){const ds=.3+(mouseY-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(mouseX,mouseY,ds*R(.65,1.3)));}mouseX=-100;mouseY=-100;},{passive:true});
 </script>
 </body>
 </html>
