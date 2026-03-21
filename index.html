@@ -45,7 +45,7 @@ const ctx=canvas.getContext('2d');
 let W,H,HOR;
 
 function resize(){
-  const d=window.devicePixelRatio||1;
+  const d=Math.min(window.devicePixelRatio||1,2);
   W=window.innerWidth;H=window.innerHeight;
   HOR=H*0.55; // 55% sky, 45% ground
   canvas.width=W*d;canvas.height=H*d;
@@ -158,16 +158,24 @@ class Flower{
     for(const p of this.fallen){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=15*dt;p.vx+=noise.get(p.x*.004,t*.3)*35*dt;p.r+=p.rs*dt;p.life-=dt;}
     this.fallen=this.fallen.filter(p=>p.life>0&&p.y<H+50);
   }
-  shed(t){if(this.fallen.length>12)return;const top=this.getTop();const c=this.petalColors[0][RI(0,this.petalCount-1)];this.fallen.push({x:top.x+R(-8,8),y:top.y+R(-8,5),vx:R(-30,30),vy:R(-45,-8),r:R(0,6.28),rs:R(-3,3),size:this.petalSize*R(.35,.7),color:c,life:R(3,8)});}
+  shed(t){if(this.fallen.length>8)return;const top=this.getTop();const c=this.petalColors[0][RI(0,this.petalCount-1)];this.fallen.push({x:top.x+R(-8,8),y:top.y+R(-8,5),vx:R(-30,30),vy:R(-45,-8),r:R(0,6.28),rs:R(-3,3),size:this.petalSize*R(.35,.7),color:c,life:R(3,8)});}
   getTop(){const t=cl(this.stemP,0,1);return{x:this.x+Math.sin(t*Math.PI)*this.stemCurve,y:this.y-this.stemH*t};}
+  _cacheHead(time){
+    const pad=this.petalSize*2.2;const dim=Math.ceil(pad*2);const d=Math.min(window.devicePixelRatio||1,2);
+    this._headOC=document.createElement('canvas');this._headOC.width=dim*d;this._headOC.height=dim*d;
+    const hc=this._headOC.getContext('2d');hc.setTransform(d,0,0,d,0,0);hc.translate(pad,pad);
+    const sv=ctx;ctx=hc;this.drawPetals(1,time);this.drawCenter(1);if(this.stamenCount>0)this.drawStamens(1,time);ctx=sv;
+    this._headPad=pad;this._headDim=dim;
+  }
   draw(time){
-    const wx=noise.fbm(this.ws+time*.13,0,3)*14*this.wSens;
-    const wa=noise.fbm(this.ws+100,time*.1,3)*.07*this.wSens;
+    const wx=noise.fbm(this.ws+time*.13,0,2)*14*this.wSens;
+    const wa=noise.fbm(this.ws+100,time*.1,2)*.07*this.wSens;
     ctx.save();ctx.globalAlpha=this.opacity;
     if(this.stemP>0)this.drawStem(wx,wa);
     if(this.budP>0){const top=this.getTop();ctx.save();ctx.translate(top.x+wx,top.y);ctx.rotate(wa);
       if(this.phase<=PH.BUD)this.drawBud();
-      else{const o=this.phase===PH.BLOOM?ease.elastic(this.bloomP):this.phase>=PH.WILT?1-ease.in(this.wiltP)*.35:1;this.drawPetals(o,time);this.drawCenter(o);if(this.stamenCount>0&&o>.5)this.drawStamens(o,time);}
+      else if(this.phase===PH.FULL){if(!this._headOC)this._cacheHead(time);ctx.drawImage(this._headOC,-this._headPad,-this._headPad,this._headDim,this._headDim);}
+      else{const o=this.phase===PH.BLOOM?ease.elastic(this.bloomP):1-ease.in(this.wiltP)*.35;this.drawPetals(o,time);this.drawCenter(o);if(this.stamenCount>0&&o>.5)this.drawStamens(o,time);}
       ctx.restore();}
     for(const p of this.fallen){const a=cl(p.life/2,0,1)*.75;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.beginPath();ctx.ellipse(0,0,p.size*.35,p.size*.55,0,0,6.28);ctx.fillStyle=hsl(p.color.h,p.color.s,p.color.l,a);ctx.fill();ctx.restore();}
     ctx.restore();
@@ -193,7 +201,6 @@ class Flower{
         gr.addColorStop(0,hsl(c.h,c.s,c.l+12,.93));gr.addColorStop(.5,hsl(c.h,c.s,c.l,.88));gr.addColorStop(1,hsl(c.h,c.s-5,c.l-10,.82));
         if(this.phase===PH.FULL)this._petalGrads[gk]=gr;}
         ctx.fillStyle=gr;ctx.fill();
-        if(po>.3){pt.draw(ctx,po);ctx.strokeStyle=hsl(c.h,c.s-10,c.l+18,.18);ctx.lineWidth=.6;ctx.stroke();}
         ctx.restore();
       }
     }
@@ -207,7 +214,7 @@ class Flower{
 // SKY: STARS
 // ══════════════════════════════════════════
 class StarField{
-  constructor(){this.stars=[];for(let i=0;i<300;i++){const y=R(0,.92);this.stars.push({x:R(0,1),y,size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100),hf:1-y*y*y});}}
+  constructor(){this.stars=[];for(let i=0;i<200;i++){const y=R(0,.92);this.stars.push({x:R(0,1),y,size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100),hf:1-y*y*y});}}
   draw(time){for(const s of this.stars){const tw=.5+.5*Math.sin(time*s.ts+s.tp);const a=s.ba*tw*s.hf;if(a<.02)continue;const sy=s.y*HOR,x=s.x*W;if(s.size>1.2){ctx.beginPath();ctx.arc(x,sy,s.size*3,0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a*.08);ctx.fill();}ctx.beginPath();ctx.arc(x,sy,s.size*(.7+tw*.3),0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a);ctx.fill();}}
 }
 
@@ -690,7 +697,7 @@ class Diglett{
 // CREATURES: FIREFLIES
 // ══════════════════════════════════════════
 class Fireflies{
-  constructor(){this.flies=[];for(let i=0;i<15;i++)this.flies.push(this.make());}
+  constructor(){this.flies=[];for(let i=0;i<10;i++)this.flies.push(this.make());}
   make(){return{x:R(W*.05,W*.95),y:R(HOR+20,H*.88),seed:R(0,1000),blinkSpeed:R(1,3),blinkPhase:R(0,6.28),size:R(1.5,3),speed:R(5,15),drift:R(0,6.28)};}
   update(dt,time){for(const f of this.flies){f.x+=Math.cos(f.drift)*f.speed*dt+noise.get(f.seed+time*.1,0)*10*dt;f.y+=Math.sin(f.drift)*f.speed*.5*dt+noise.get(0,f.seed+time*.1)*8*dt;f.drift+=R(-.5,.5)*dt;if(f.x<-20||f.x>W+20||f.y<HOR||f.y>H+20)Object.assign(f,this.make());}}
   draw(time){for(const f of this.flies){const blink=Math.pow(Math.max(0,Math.sin(time*f.blinkSpeed+f.blinkPhase)),3);if(blink<.05)continue;const a=blink*.7;ctx.beginPath();ctx.arc(f.x,f.y,f.size*4,0,6.28);ctx.fillStyle=`rgba(180,220,80,${a*.12})`;ctx.fill();ctx.beginPath();ctx.arc(f.x,f.y,f.size,0,6.28);ctx.fillStyle=`rgba(200,240,100,${a})`;ctx.fill();}}
@@ -811,7 +818,7 @@ class BlossomStorm{
   update(dt,time){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(180,360);
       const dir=Math.random()>.5?1:-1;
-      for(let i=0;i<220;i++){
+      for(let i=0;i<120;i++){
         const delay=R(0,2);
         this.petals.push({
           x:dir>0?R(-50,-10):R(W+10,W+50),
@@ -1210,7 +1217,7 @@ class GreatBloom{
     if(this.phase==='bloom'){
       // Massive spawn wave
       if(this.phaseTime<.1){
-        for(let i=0;i<50;i++){
+        for(let i=0;i<30;i++){
           const x=R(W*.03,W*.97),y=R(HOR+8,H*.95);
           const ds=.3+(y-HOR)/(H-HOR)*.9;
           const f=new Flower(x,y,ds*R(.6,1.35));
@@ -1325,7 +1332,7 @@ class Snowfall{
   update(dt,time){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(1800,3600);
       this.time=0;this.duration=R(18,30);this.flakes=[];
-      for(let i=0;i<250;i++){
+      for(let i=0;i<140;i++){
         this.flakes.push({
           x:R(-20,W+20),y:R(-H*.5,H),
           size:R(.8,3.5),speed:R(15,40),
@@ -1375,7 +1382,7 @@ class Snowfall{
 class Garden{
   constructor(){
     this.flowers=[];this.particles=[];this.butterflies=[];this.bees=[];this.grass=[];this.waves=[];this.time=0;
-    this.maxFlowers=75;
+    this.maxFlowers=55;
 
     // Sky
     this.starField=new StarField();this.starBloom=new StarBloom();this.shootingStars=new ShootingStars();
@@ -1405,16 +1412,16 @@ class Garden{
     this._hillsOC=null;this._mistR=[];for(let i=0;i<5;i++)this._mistR.push(R(80,220));
     this._skyFrame=0;this._skyGrad=null;this._skyC=0;
     this.initGrass();
-    for(let i=0;i<50;i++)this.particles.push(new Particle());
-    for(let i=0;i<6;i++)this.particles.push(new Particle('seed'));
-    for(let i=0;i<8;i++)this.particles.push(new Particle('mote'));
+    for(let i=0;i<30;i++)this.particles.push(new Particle());
+    for(let i=0;i<4;i++)this.particles.push(new Particle('seed'));
+    for(let i=0;i<5;i++)this.particles.push(new Particle('mote'));
     for(let i=0;i<3;i++)this.butterflies.push(new Butterfly());
     for(let i=0;i<4;i++)this.bees.push(new Bee());
 
     this.skyPhase=R(0,6.28);
 
     // Dense initial meadow
-    for(let i=0;i<38;i++){
+    for(let i=0;i<28;i++){
       const x=R(W*.03,W*.97),y=R(HOR+8,H*.95);
       const ds=.3+(y-HOR)/(H-HOR)*.9;
       const f=new Flower(x,y,ds*R(.6,1.35));
@@ -1423,7 +1430,7 @@ class Garden{
     }
   }
 
-  initGrass(){this.grass=[];for(let x=0;x<W;x+=R(3,9)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
+  initGrass(){this.grass=[];for(let x=0;x<W;x+=R(5,12)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
     this.time+=dt;
@@ -1536,7 +1543,24 @@ class Garden{
 
 // ── MAIN LOOP ──
 const garden=new Garden();let lastTime=performance.now();
-function frame(now){const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;garden.update(dt);garden.draw();requestAnimationFrame(frame);}
+let _fpsSamples=[],_fpsCheck=0;
+function frame(now){
+  const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;
+  if(dt>0)_fpsSamples.push(1/dt);if(_fpsSamples.length>90)_fpsSamples.shift();
+  if(now-_fpsCheck>4000&&_fpsSamples.length>30){_fpsCheck=now;
+    const avg=_fpsSamples.reduce((a,b)=>a+b,0)/_fpsSamples.length;
+    if(avg<22){
+      garden.maxFlowers=Math.max(18,garden.maxFlowers-8);
+      if(garden.starField.stars.length>80)garden.starField.stars.length=Math.max(80,garden.starField.stars.length-40);
+      while(garden.particles.length>15)garden.particles.pop();
+      while(garden.grass.length>80)garden.grass.pop();
+      while(garden.fireflies.flies.length>4)garden.fireflies.flies.pop();
+    }else if(avg<30){
+      garden.maxFlowers=Math.max(25,garden.maxFlowers-3);
+    }
+  }
+  garden.update(dt);garden.draw();requestAnimationFrame(frame);
+}
 requestAnimationFrame(frame);
 window.addEventListener('resize',()=>{resize();garden.initGrass();garden._skyGrad=null;});
 </script>
