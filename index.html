@@ -142,6 +142,8 @@ class Flower{
     this.stemDur=R(1.8,3.5);this.budDur=R(1.2,2.5);this.bloomDur=R(2.5,5.5);this.fullDur=R(14,40);this.wiltDur=R(3,7);
     this.ws=Math.random()*1000;this.wSens=R(.4,1.6);
     this.pOff=[];for(let l=0;l<this.layers;l++){const o=[];for(let i=0;i<this.petalCount;i++)o.push({a:R(-.1,.1),s:R(.88,1.12),d:R(0,.35)});this.pOff.push(o);}
+    this._petPaths=[];for(let l=0;l<this.layers;l++){const lp=[];const ls=1-l*.14;for(let i=0;i<this.petalCount;i++)lp.push(petalPath(this.sp.pt,this.petalSize*ls*this.pOff[l][i].s));this._petPaths.push(lp);}
+    this._petalGrads=[];
     this.fallen=[];
   }
   update(dt,t){
@@ -182,18 +184,21 @@ class Flower{
       const lo=cl(op*1.3-layer*.25,0,1);if(lo<=0)continue;const ls=1-layer*.14;const lr=layer*(Math.PI/this.petalCount/2);
       for(let i=0;i<this.petalCount;i++){
         const off=this.pOff[layer][i];const angle=(i/this.petalCount)*6.28+lr+off.a;const po=cl(lo-off.d,0,1);if(po<=0)continue;
-        const c=this.petalColors[layer][i];const pt=petalPath(this.sp.pt,this.petalSize*ls*off.s);
+        const c=this.petalColors[layer][i];const pt=this._petPaths[layer][i];
         const br=1+Math.sin(time*1.1+i+layer*2.3+this.id*10)*.018;
         ctx.save();ctx.rotate(angle);ctx.scale(br,br);pt.draw(ctx,po);
-        const gr=ctx.createRadialGradient(0,0,0,0,-this.petalSize*po*.5,this.petalSize*po);
+        let gr;const gk=layer*100+i;
+        if(this.phase===PH.FULL&&this._petalGrads[gk]){gr=this._petalGrads[gk];}
+        else{gr=ctx.createRadialGradient(0,0,0,0,-this.petalSize*po*.5,this.petalSize*po);
         gr.addColorStop(0,hsl(c.h,c.s,c.l+12,.93));gr.addColorStop(.5,hsl(c.h,c.s,c.l,.88));gr.addColorStop(1,hsl(c.h,c.s-5,c.l-10,.82));
+        if(this.phase===PH.FULL)this._petalGrads[gk]=gr;}
         ctx.fillStyle=gr;ctx.fill();
         if(po>.3){pt.draw(ctx,po);ctx.strokeStyle=hsl(c.h,c.s-10,c.l+18,.18);ctx.lineWidth=.6;ctx.stroke();}
         ctx.restore();
       }
     }
   }
-  drawCenter(op){if(op<.3)return;const c=this.cc;const r=this.petalSize*this.sp.cs*op;const a=cl((op-.3)/.4,0,1);const gr=ctx.createRadialGradient(0,0,0,0,0,r);gr.addColorStop(0,hsl(c.h,c.s,c.l+10,a));gr.addColorStop(.7,hsl(c.h,c.s,c.l,a*.9));gr.addColorStop(1,hsl(c.h,c.s+10,c.l-15,a*.55));ctx.beginPath();ctx.arc(0,0,r,0,6.28);ctx.fillStyle=gr;ctx.fill();if(op>.6){const da=cl((op-.6)/.3,0,1)*.65;const ga=Math.PI*(3-Math.sqrt(5));const dc=Math.floor(r*3);for(let i=0;i<dc;i++){const an=i*ga,d=Math.sqrt(i/dc)*r*.85;ctx.beginPath();ctx.arc(Math.cos(an)*d,Math.sin(an)*d,.4+(i/dc)*.8,0,6.28);ctx.fillStyle=hsl(c.h+15,c.s-20,c.l-20,da);ctx.fill();}}}
+  drawCenter(op){if(op<.3)return;const c=this.cc;const r=this.petalSize*this.sp.cs*op;const a=cl((op-.3)/.4,0,1);const gr=ctx.createRadialGradient(0,0,0,0,0,r);gr.addColorStop(0,hsl(c.h,c.s,c.l+10,a));gr.addColorStop(.7,hsl(c.h,c.s,c.l,a*.9));gr.addColorStop(1,hsl(c.h,c.s+10,c.l-15,a*.55));ctx.beginPath();ctx.arc(0,0,r,0,6.28);ctx.fillStyle=gr;ctx.fill();if(op>.6){const da=cl((op-.6)/.3,0,1)*.65;const ga=Math.PI*(3-Math.sqrt(5));const dc=Math.floor(r*3);ctx.fillStyle=hsl(c.h+15,c.s-20,c.l-20,da);ctx.beginPath();for(let i=0;i<dc;i++){const an=i*ga,d=Math.sqrt(i/dc)*r*.85,dx=Math.cos(an)*d,dy=Math.sin(an)*d,dr=.4+(i/dc)*.8;ctx.moveTo(dx+dr,dy);ctx.arc(dx,dy,dr,0,6.28);}ctx.fill();}}
   drawStamens(op,time){if(op<.6)return;const a=cl((op-.6)/.3,0,1);const c=this.cc;for(let i=0;i<this.stamenCount;i++){const an=(i/this.stamenCount)*6.28+.3;const len=this.petalSize*R(.3,.5)*op;const sw=Math.sin(time*.4+i*1.5+this.id*5)*.012;ctx.save();ctx.rotate(an+sw);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-len);ctx.strokeStyle=hsl(c.h+10,c.s-20,c.l+20,a*.55);ctx.lineWidth=.5;ctx.stroke();ctx.beginPath();ctx.arc(0,-len,1.1*this.scale,0,6.28);ctx.fillStyle=hsl(c.h+20,c.s,c.l-5,a*.75);ctx.fill();ctx.restore();}}
   get isDead(){return this.phase===PH.DEAD&&this.fallen.length===0;}
 }
@@ -202,8 +207,8 @@ class Flower{
 // SKY: STARS
 // ══════════════════════════════════════════
 class StarField{
-  constructor(){this.stars=[];for(let i=0;i<300;i++)this.stars.push({x:R(0,1),y:R(0,.92),size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100)});}
-  draw(time){for(const s of this.stars){const sy=s.y*HOR;const hf=1-Math.pow(s.y,3);const tw=.5+.5*Math.sin(time*s.ts+s.tp);const a=s.ba*tw*hf;if(a<.02)continue;const x=s.x*W;if(s.size>1.2){ctx.beginPath();ctx.arc(x,sy,s.size*3,0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a*.08);ctx.fill();}ctx.beginPath();ctx.arc(x,sy,s.size*(.7+tw*.3),0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a);ctx.fill();}}
+  constructor(){this.stars=[];for(let i=0;i<300;i++){const y=R(0,.92);this.stars.push({x:R(0,1),y,size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100),hf:1-y*y*y});}}
+  draw(time){for(const s of this.stars){const tw=.5+.5*Math.sin(time*s.ts+s.tp);const a=s.ba*tw*s.hf;if(a<.02)continue;const sy=s.y*HOR,x=s.x*W;if(s.size>1.2){ctx.beginPath();ctx.arc(x,sy,s.size*3,0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a*.08);ctx.fill();}ctx.beginPath();ctx.arc(x,sy,s.size*(.7+tw*.3),0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a);ctx.fill();}}
 }
 
 // ══════════════════════════════════════════
@@ -754,7 +759,7 @@ class Particle{
 // ══════════════════════════════════════════
 class GrassBlade{
   constructor(x){this.x=x;this.y=groundY(x)+R(-3,8);this.h=R(12,50);this.curve=R(-10,10);this.w=R(1,2.8);this.hue=R(75,135);this.sat=R(30,60);this.lit=R(25,50);this.seed=R(0,1000);}
-  draw(time){const wx=noise.get(this.seed+time*.2,0)*8;ctx.strokeStyle=hsl(this.hue,this.sat,this.lit,.55);ctx.lineWidth=this.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.quadraticCurveTo(this.x+this.curve+wx,this.y-this.h*.6,this.x+this.curve*1.5+wx*1.5,this.y-this.h);ctx.stroke();}
+  draw(time){if(!this._wt||time-this._wt>.05){this._wt=time;this._wx=noise.get(this.seed+time*.2,0)*8;}const wx=this._wx;ctx.strokeStyle=hsl(this.hue,this.sat,this.lit,.55);ctx.lineWidth=this.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.quadraticCurveTo(this.x+this.curve+wx,this.y-this.h*.6,this.x+this.curve*1.5+wx*1.5,this.y-this.h);ctx.stroke();}
 }
 
 // ══════════════════════════════════════════
@@ -1397,6 +1402,8 @@ class Garden{
     this.meteorTimer=R(100,200);
     this.flowerWaveTimer=R(60,120);
 
+    this._hillsOC=null;this._mistR=[];for(let i=0;i<5;i++)this._mistR.push(R(80,220));
+    this._skyFrame=0;this._skyGrad=null;this._skyC=0;
     this.initGrass();
     for(let i=0;i<50;i++)this.particles.push(new Particle());
     for(let i=0;i<6;i++)this.particles.push(new Particle('seed'));
@@ -1416,7 +1423,7 @@ class Garden{
     }
   }
 
-  initGrass(){this.grass=[];for(let x=0;x<W;x+=R(3,9)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}}
+  initGrass(){this.grass=[];for(let x=0;x<W;x+=R(3,9)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
     this.time+=dt;
@@ -1439,7 +1446,7 @@ class Garden{
     if(this.meteorTimer<=0){this.shootingStars.shower();this.meteorTimer=R(120,240);}
 
     for(const w of this.waves)w.update(dt,this);this.waves=this.waves.filter(w=>!w.done);
-    for(const f of this.flowers)f.update(dt,this.time);this.flowers=this.flowers.filter(f=>!f.isDead);
+    for(const f of this.flowers)f.update(dt,this.time);this.flowers=this.flowers.filter(f=>!f.isDead);this.flowers.sort((a,b)=>a.y-b.y);
 
     // Sky
     this.starBloom.update(dt,this.time);this.shootingStars.update(dt);this.moon.update(dt);
@@ -1486,8 +1493,7 @@ class Garden{
     this.drawHills();
     for(const g of this.grass){if(g.y>H*.78)g.draw(this.time);}
     for(const p of this.particles){if(p.type==='pollen')p.draw(this.time);}
-    const sorted=[...this.flowers].sort((a,b)=>a.y-b.y);
-    for(const f of sorted)f.draw(this.time);
+    for(const f of this.flowers)f.draw(this.time);
     this.diglett.draw(this.time);
     for(const g of this.grass){if(g.y<=H*.78)g.draw(this.time);}
     for(const p of this.particles){if(p.type!=='pollen')p.draw(this.time);}
@@ -1506,27 +1512,24 @@ class Garden{
   }
 
   drawSky(){
-    const c=Math.sin(this.time*.006+this.skyPhase)*.5+.5;
+    this._skyFrame++;
+    if(!this._skyGrad||this._skyFrame%8===0){const c=Math.sin(this.time*.006+this.skyPhase)*.5+.5;this._skyC=c;
     const sg=ctx.createLinearGradient(0,0,0,HOR+30);
-    sg.addColorStop(0,hsl(228+c*10,35+c*10,6+c*5));
-    sg.addColorStop(.25,hsl(235+c*8,30+c*8,10+c*8));
-    sg.addColorStop(.5,hsl(250+c*10,25+c*12,18+c*12));
-    sg.addColorStop(.75,hsl(280-c*40,30+c*15,28+c*15));
-    sg.addColorStop(.92,hsl(35+c*10,45+c*20,40+c*18));
-    sg.addColorStop(1,hsl(30+c*8,40+c*15,35+c*12));
-    ctx.fillStyle=sg;ctx.fillRect(0,0,W,HOR+30);
-    const sunX=W*(.55+Math.sin(this.time*.002)*.15);
+    sg.addColorStop(0,hsl(228+c*10,35+c*10,6+c*5));sg.addColorStop(.25,hsl(235+c*8,30+c*8,10+c*8));
+    sg.addColorStop(.5,hsl(250+c*10,25+c*12,18+c*12));sg.addColorStop(.75,hsl(280-c*40,30+c*15,28+c*15));
+    sg.addColorStop(.92,hsl(35+c*10,45+c*20,40+c*18));sg.addColorStop(1,hsl(30+c*8,40+c*15,35+c*12));
+    this._skyGrad=sg;}
+    ctx.fillStyle=this._skyGrad;ctx.fillRect(0,0,W,HOR+30);
+    const c=this._skyC;const sunX=W*(.55+Math.sin(this.time*.002)*.15);
     const gg=ctx.createRadialGradient(sunX,HOR,0,sunX,HOR,HOR*.6);
     gg.addColorStop(0,`rgba(255,210,130,${.12+c*.06})`);gg.addColorStop(.3,`rgba(255,180,100,${.06+c*.03})`);gg.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=gg;ctx.fillRect(0,0,W,HOR+30);
   }
 
-  drawHills(){
-    const layers=[{yOff:-30,col:[120,28,30],alpha:.6,freq:.0005},{yOff:-12,col:[112,32,26],alpha:.7,freq:.001},{yOff:0,col:[105,38,22],alpha:.85,freq:.0015}];
-    for(const l of layers){ctx.beginPath();ctx.moveTo(0,H);for(let x=0;x<=W;x+=4){const y=groundY(x)+l.yOff+noise.get(x*l.freq+hillSeed+l.yOff,0)*25;ctx.lineTo(x,y);}ctx.lineTo(W,H);ctx.closePath();const hg=ctx.createLinearGradient(0,HOR-20,0,H);hg.addColorStop(0,hsl(l.col[0],l.col[1],l.col[2]+12,l.alpha));hg.addColorStop(.5,hsl(l.col[0]-5,l.col[1]+5,l.col[2],l.alpha));hg.addColorStop(1,hsl(l.col[0]-10,l.col[1]+8,l.col[2]-8,l.alpha));ctx.fillStyle=hg;ctx.fill();}
-  }
+  drawHills(){if(this._hillsOC)ctx.drawImage(this._hillsOC,0,0,W,H);}
+  _renderHills(){const d=window.devicePixelRatio||1;this._hillsOC=document.createElement('canvas');this._hillsOC.width=W*d;this._hillsOC.height=H*d;const hc=this._hillsOC.getContext('2d');hc.setTransform(d,0,0,d,0,0);const layers=[{yOff:-30,col:[120,28,30],alpha:.6,freq:.0005},{yOff:-12,col:[112,32,26],alpha:.7,freq:.001},{yOff:0,col:[105,38,22],alpha:.85,freq:.0015}];for(const l of layers){hc.beginPath();hc.moveTo(0,H);for(let x=0;x<=W;x+=4){const y=groundY(x)+l.yOff+noise.get(x*l.freq+hillSeed+l.yOff,0)*25;hc.lineTo(x,y);}hc.lineTo(W,H);hc.closePath();const hg=hc.createLinearGradient(0,HOR-20,0,H);hg.addColorStop(0,hsl(l.col[0],l.col[1],l.col[2]+12,l.alpha));hg.addColorStop(.5,hsl(l.col[0]-5,l.col[1]+5,l.col[2],l.alpha));hg.addColorStop(1,hsl(l.col[0]-10,l.col[1]+8,l.col[2]-8,l.alpha));hc.fillStyle=hg;hc.fill();}}
 
-  drawMist(){for(let i=0;i<5;i++){const x=W*.5+noise.fbm(i*3+this.time*.025,0,3)*W*.6,y=HOR+30+i*20+noise.get(i*7,this.time*.04)*20,r=R(80,220);const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(180,200,160,${.018+Math.sin(this.time*.4+i)*.006})`);g.addColorStop(1,'rgba(180,200,160,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);}}
+  drawMist(){for(let i=0;i<5;i++){const x=W*.5+noise.fbm(i*3+this.time*.025,0,2)*W*.6,y=HOR+30+i*20+noise.get(i*7,this.time*.04)*20,r=this._mistR[i];const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(180,200,160,${.018+Math.sin(this.time*.4+i)*.006})`);g.addColorStop(1,'rgba(180,200,160,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);}}
 
   drawSunlight(){const c=Math.sin(this.time*.006+this.skyPhase)*.5+.5;const sunX=W*(.55+Math.sin(this.time*.002)*.15);ctx.save();ctx.globalCompositeOperation='screen';for(let i=0;i<3;i++){const angle=(.25+i*.18)+Math.sin(this.time*.015+i)*.04;const len=H*1.2;const x2=sunX+Math.cos(angle)*len,y2=HOR+Math.sin(angle)*len;const rg=ctx.createLinearGradient(sunX,HOR,x2,y2);rg.addColorStop(0,`rgba(255,210,130,${.01+c*.006})`);rg.addColorStop(.4,`rgba(255,190,90,${.004})`);rg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.moveTo(sunX,HOR);const sp=35+i*20;ctx.lineTo(x2-sp,y2);ctx.lineTo(x2+sp,y2);ctx.closePath();ctx.fillStyle=rg;ctx.fill();}ctx.restore();}
 }
@@ -1535,7 +1538,7 @@ class Garden{
 const garden=new Garden();let lastTime=performance.now();
 function frame(now){const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;garden.update(dt);garden.draw();requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
-window.addEventListener('resize',()=>{resize();garden.initGrass();});
+window.addEventListener('resize',()=>{resize();garden.initGrass();garden._skyGrad=null;});
 </script>
 </body>
 </html>
