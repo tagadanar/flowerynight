@@ -1552,9 +1552,9 @@ class UFO{
 // LEGENDARY: SNOWFALL (every 30-60 min)
 // ══════════════════════════════════════════
 class Snowfall{
-  constructor(){this.active=false;this.timer=R(600,1080);this.flakes=[];this.time=0;this.duration=0;}
+  constructor(){this.active=false;this.timer=R(360,600);this.flakes=[];this.time=0;this.duration=0;}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1080);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(360,600);
       this.time=0;this.duration=R(18,30);this.flakes=[];
       for(let i=0;i<140;i++){
         this.flakes.push({
@@ -2314,9 +2314,9 @@ class BigTree{
 // VERY RARE: METEOR IMPACT (every 12-25 min)
 // ══════════════════════════════════════════
 class MeteorImpact{
-  constructor(){this.phase='idle';this.timer=R(720,1500);this.time=0;this.x=0;this.y=0;this.ix=0;this.iy=0;this.trail=[];this.debris=[];this.craterAlpha=0;}
+  constructor(){this.phase='idle';this.timer=R(360,540);this.time=0;this.x=0;this.y=0;this.ix=0;this.iy=0;this.trail=[];this.debris=[];this.craterAlpha=0;}
   update(dt,time,garden){
-    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='fall';this.time=0;this.timer=R(720,1500);
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='fall';this.time=0;this.timer=R(360,540);
       this.x=R(W*.1,W*.5);this.y=-30;this.ix=R(W*.3,W*.7);this.iy=R(HOR+40,H*.75);this.trail=[];this.debris=[];}return;}
     this.time+=dt;
     if(this.phase==='fall'){
@@ -2384,9 +2384,9 @@ class MeteorImpact{
 // ULTRA RARE: DEATH STAR (every 20-40 min)
 // ══════════════════════════════════════════
 class DeathStar{
-  constructor(){this.phase='idle';this.timer=R(1200,2400);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];}
+  constructor(){this.phase='idle';this.timer=R(420,600);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];}
   update(dt,time,garden){
-    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(1200,2400);this.x=W*.8;this.y=HOR*.15;this.size=2;this.embers=[];}return;}
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(420,600);this.x=W*.8;this.y=HOR*.15;this.size=2;this.embers=[];}return;}
     this.time+=dt;
     if(this.phase==='enter'){
       // Grow from tiny dot to large sphere over 10s
@@ -2548,6 +2548,16 @@ class Garden{
     this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
     this.meteorImpact=new MeteorImpact();this.deathStar=new DeathStar();
 
+    // All events can happen early — randomize initial timers to short values
+    // Repeat timers (set when events end) keep their designed longer intervals
+    const earlyEvents=[this.aurora,this.rainbow,this.eclipse,this.snowfall,this.rainEvent,
+      this.fogBank,this.windGust,this.blossomStorm,this.lanternFestival,this.willOWisp,
+      this.hotAirBalloon,this.skyWhale,this.greatBloom,this.ufoSystem,this.grandRose,
+      this.giantBloom,this.satellite,this.planet,this.wishingStar,this.fireflySwarm,
+      this.distantTrain,this.lighthouse,this.bannerPlane,this.paperLantern,this.musicNotes,
+      this.northStar,this.meteorImpact,this.deathStar];
+    for(const e of earlyEvents){if(e.timer!==undefined)e.timer=R(5,45);}
+
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
     this.waveTimer=R(3,7);
     this.meteorTimer=R(100,200);
@@ -2575,6 +2585,13 @@ class Garden{
   }
 
   _inPond(x,y){return this.pond.contains(x,y);}
+  _countMajor(){let n=0;
+    if(this.aurora.active)n++;if(this.rainbow.active)n++;if(this.eclipse.active)n++;
+    if(this.snowfall.active)n++;if(this.rainEvent.active)n++;if(this.fogBank.active)n++;
+    if(this.blossomStorm.active)n++;if(this.lanternFestival.active)n++;if(this.windGust.active)n++;
+    if(this.deathStar.phase!=='idle')n++;if(this.meteorImpact.phase!=='idle')n++;
+    if(this.greatBloom.phase!=='idle')n++;if(this.skyWhale.active)n++;
+    if(this.hotAirBalloon.active)n++;if(this.ufoSystem.active)n++;return n;}
   initGrass(){this.grass=[];for(let x=0;x<W;x+=R(5,12)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
@@ -2617,23 +2634,30 @@ class Garden{
     this.owl.update(dt);this.frogSystem.update(dt);this.snailSystem.update(dt);
     this.ladybugSystem.update(dt,this.time);this.cat.update(dt,this.time);this.dragonflySystem.update(dt,this.time);
 
-    // Weather
-    this.rainEvent.update(dt);this.lightning.update(dt);this.fogBank.update(dt);this.windGust.update(dt);
-
-    // Rare events
-    this.blossomStorm.update(dt,this.time);
-    this.grandRose.update(dt,this.time,this);this.giantBloom.update(dt,this.time,this);
-    this.lanternFestival.update(dt,this.time);
-    this.willOWisp.update(dt,this.time);
-    this.hotAirBalloon.update(dt,this.time);
-    this.skyWhale.update(dt,this.time);
-    this.greatBloom.update(dt,this.time,this);
-    this.eclipse.update(dt);
-    this.ufoSystem.update(dt,this.time);
-    this.snowfall.update(dt,this.time);
+    // Weather & rare events — max 2 major events at once to avoid clutter
+    // Major events only tick timers when slots available; active ones always update
+    const mj=this._countMajor()<2;
+    // Always update (small visual, no slot needed)
+    this.lightning.update(dt);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
     this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
-    this.meteorImpact.update(dt,this.time,this);this.deathStar.update(dt,this.time,this);
+    this.willOWisp.update(dt,this.time);this.grandRose.update(dt,this.time,this);this.giantBloom.update(dt,this.time,this);
+    // Major events — gated (idle timers pause when 2 slots full)
+    if(mj||this.aurora.active)this.aurora.update(dt,this.time);
+    if(mj||this.rainbow.active)this.rainbow.update(dt);
+    if(mj||this.eclipse.active)this.eclipse.update(dt);
+    if(mj||this.snowfall.active)this.snowfall.update(dt,this.time);
+    if(mj||this.rainEvent.active)this.rainEvent.update(dt);
+    if(mj||this.fogBank.active)this.fogBank.update(dt);
+    if(mj||this.windGust.active)this.windGust.update(dt);
+    if(mj||this.blossomStorm.active)this.blossomStorm.update(dt,this.time);
+    if(mj||this.lanternFestival.active)this.lanternFestival.update(dt,this.time);
+    if(mj||this.hotAirBalloon.active)this.hotAirBalloon.update(dt,this.time);
+    if(mj||this.skyWhale.active)this.skyWhale.update(dt,this.time);
+    if(mj||this.ufoSystem.active)this.ufoSystem.update(dt,this.time);
+    if(mj||this.greatBloom.phase!=='idle')this.greatBloom.update(dt,this.time,this);
+    if(mj||this.meteorImpact.phase!=='idle')this.meteorImpact.update(dt,this.time,this);
+    if(mj||this.deathStar.phase!=='idle')this.deathStar.update(dt,this.time,this);
   }
 
   draw(){
