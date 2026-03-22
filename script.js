@@ -66,18 +66,18 @@ function petalPath(type,size){const fn=PSHAPES[type]||PSHAPES.round;return{draw:
 
 // ── SPECIES ──
 const SPECIES=[
-  {n:'cherry',pc:[5,5],pt:'round',ps:[16,26],ly:1,pl:'cherry',cs:.25,sc:[5,8]},
-  {n:'rose',pc:[5,7],pt:'pointed',ps:[18,32],ly:[2,4],pl:'rose',cs:.14,sc:[0,0]},
-  {n:'sun',pc:[14,20],pt:'elongated',ps:[18,28],ly:1,pl:'sun',cs:.35,sc:[0,0]},
-  {n:'lav',pc:[4,6],pt:'bell',ps:[6,11],ly:1,pl:'lav',cs:.12,sc:[0,2]},
-  {n:'daisy',pc:[10,16],pt:'tiny',ps:[10,16],ly:1,pl:'daisy',cs:.28,sc:[3,6]},
-  {n:'poppy',pc:[4,6],pt:'cupped',ps:[22,38],ly:1,pl:'poppy',cs:.22,sc:[10,18]},
-  {n:'corn',pc:[7,9],pt:'spiky',ps:[12,20],ly:1,pl:'corn',cs:.2,sc:[3,5]},
-  {n:'wrose',pc:[5,5],pt:'heart',ps:[18,28],ly:1,pl:'wrose',cs:.22,sc:[8,14]},
-  {n:'butt',pc:[5,5],pt:'round',ps:[8,14],ly:1,pl:'butt',cs:.2,sc:[4,8]},
-  {n:'fox',pc:[5,6],pt:'bell',ps:[10,16],ly:1,pl:'fox',cs:.15,sc:[0,2]},
-  {n:'cosm',pc:[8,8],pt:'wide',ps:[16,26],ly:1,pl:'cosm',cs:.18,sc:[5,8]},
-  {n:'bell',pc:[5,6],pt:'bell',ps:[8,14],ly:1,pl:'bell',cs:.12,sc:[0,2]},
+  {n:'cherry',pc:[5,5],pt:'round',ps:[20,34],ly:1,pl:'cherry',cs:.25,sc:[5,8]},
+  {n:'rose',pc:[5,7],pt:'pointed',ps:[24,40],ly:[2,4],pl:'rose',cs:.14,sc:[0,0]},
+  {n:'sun',pc:[14,20],pt:'elongated',ps:[24,36],ly:1,pl:'sun',cs:.35,sc:[0,0]},
+  {n:'lav',pc:[4,6],pt:'bell',ps:[8,15],ly:1,pl:'lav',cs:.12,sc:[0,2]},
+  {n:'daisy',pc:[10,16],pt:'tiny',ps:[13,22],ly:1,pl:'daisy',cs:.28,sc:[3,6]},
+  {n:'poppy',pc:[4,6],pt:'cupped',ps:[28,48],ly:1,pl:'poppy',cs:.22,sc:[10,18]},
+  {n:'corn',pc:[7,9],pt:'spiky',ps:[16,26],ly:1,pl:'corn',cs:.2,sc:[3,5]},
+  {n:'wrose',pc:[5,5],pt:'heart',ps:[24,36],ly:1,pl:'wrose',cs:.22,sc:[8,14]},
+  {n:'butt',pc:[5,5],pt:'round',ps:[10,18],ly:1,pl:'butt',cs:.2,sc:[4,8]},
+  {n:'fox',pc:[5,6],pt:'bell',ps:[13,22],ly:1,pl:'fox',cs:.15,sc:[0,2]},
+  {n:'cosm',pc:[8,8],pt:'wide',ps:[20,34],ly:1,pl:'cosm',cs:.18,sc:[5,8]},
+  {n:'bell',pc:[5,6],pt:'bell',ps:[10,18],ly:1,pl:'bell',cs:.12,sc:[0,2]},
 ];
 
 // ══════════════════════════════════════════
@@ -172,7 +172,7 @@ class Flower{
 // SKY: STARS
 // ══════════════════════════════════════════
 class StarField{
-  constructor(){this.stars=[];for(let i=0;i<200;i++){const y=R(0,.92);this.stars.push({x:R(0,1),y,size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100),hf:1-y*y*y});}}
+  constructor(){this.stars=[];for(let i=0;i<250;i++){const y=R(0,.92);this.stars.push({x:R(0,1),y,size:R(.3,2.2),ts:R(.5,4),tp:R(0,6.28),ba:R(.15,.7),hue:pick([220,230,240,200,45,30,0,350]),sat:R(5,40),lit:R(80,100),hf:1-y*y*y});}}
   draw(time){for(const s of this.stars){const tw=.5+.5*Math.sin(time*s.ts+s.tp);const a=s.ba*tw*s.hf;if(a<.02)continue;const sy=s.y*HOR,x=s.x*W;if(s.size>1.2){ctx.beginPath();ctx.arc(x,sy,s.size*3,0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a*.08);ctx.fill();}ctx.beginPath();ctx.arc(x,sy,s.size*(.7+tw*.3),0,6.28);ctx.fillStyle=hsl(s.hue,s.sat,s.lit,a);ctx.fill();}}
 }
 
@@ -303,14 +303,27 @@ class MoonBiker{
     ctx.moveTo(12,-6);ctx.lineTo(12,-2);
     ctx.moveTo(7.5,-4);ctx.lineTo(12,-4);
     ctx.stroke();
-    // Basket passenger — round head + pointy finger
-    ctx.beginPath();ctx.arc(10,-4,1.8,0,6.28);ctx.fill();
-    // Small body in basket
-    ctx.beginPath();ctx.ellipse(10,-2.8,1.2,1.5,0,0,6.28);ctx.fill();
-    // Pointing finger upward
-    ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(11.2,-4.5);ctx.lineTo(12.5,-7);ctx.stroke();
-    // Finger glow
-    ctx.beginPath();ctx.arc(12.5,-7,1.2,0,6.28);ctx.fillStyle='rgba(100,150,220,.15)';ctx.fill();
+    // Basket passenger — alien silhouette
+    // Body hunched in basket
+    ctx.beginPath();ctx.ellipse(9.8,-2.5,1.3,1.8,-.1,0,6.28);ctx.fill();
+    // Long thin neck
+    ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(9.5,-3.8);ctx.quadraticCurveTo(9,-5,9.2,-6);ctx.stroke();
+    // Large oblong head
+    ctx.beginPath();ctx.ellipse(9.5,-7,2.2,1.6,.15,0,6.28);ctx.fill();
+    // Big eye
+    ctx.beginPath();ctx.arc(10.2,-7.2,.5,0,6.28);ctx.fillStyle='rgba(120,160,200,.3)';ctx.fill();
+    // Long arm pointing upward
+    ctx.strokeStyle=col;ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(10.5,-3.5);ctx.quadraticCurveTo(12,-5,12.8,-7.5);ctx.stroke();
+    // Long finger
+    ctx.beginPath();ctx.moveTo(12.8,-7.5);ctx.lineTo(13.2,-9);ctx.stroke();
+    // Iconic fingertip glow
+    const glow=ctx.createRadialGradient(13.2,-9,0,13.2,-9,2.5);
+    glow.addColorStop(0,'rgba(180,200,255,.3)');glow.addColorStop(.4,'rgba(130,170,240,.1)');glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.arc(13.2,-9,2.5,0,6.28);ctx.fillStyle=glow;ctx.fill();
+    ctx.beginPath();ctx.arc(13.2,-9,.4,0,6.28);ctx.fillStyle='rgba(200,220,255,.5)';ctx.fill();
+    // Glowing heart-light on chest
+    ctx.beginPath();ctx.arc(9.8,-2.8,.6,0,6.28);ctx.fillStyle='rgba(255,100,80,.15)';ctx.fill();
+    ctx.beginPath();ctx.arc(9.8,-2.8,.25,0,6.28);ctx.fillStyle='rgba(255,120,100,.3)';ctx.fill();
     ctx.restore();
   }
 }
@@ -811,7 +824,7 @@ class Particle{
 // GRASS
 // ══════════════════════════════════════════
 class GrassBlade{
-  constructor(x){this.x=x;this.y=groundY(x)+R(-3,8);this.h=R(12,50);this.curve=R(-10,10);this.w=R(1,2.8);this.hue=R(75,135);this.sat=R(30,60);this.lit=R(25,50);this.seed=R(0,1000);}
+  constructor(x){this.x=x;this.y=groundY(x)+R(-3,8);this.h=R(12,50);this.curve=R(-10,10);this.w=R(1,2.8);this.hue=R(80,140);this.sat=R(20,45);this.lit=R(12,30);this.seed=R(0,1000);}
   draw(time){if(!this._wt||time-this._wt>.05){this._wt=time;this._wx=noise.get(this.seed+time*.2,0)*8;}const wx=this._wx+gustForce;ctx.strokeStyle=hsl(this.hue,this.sat,this.lit,.55);ctx.lineWidth=this.w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(this.x,this.y);ctx.quadraticCurveTo(this.x+this.curve+wx,this.y-this.h*.6,this.x+this.curve*1.5+wx*1.5,this.y-this.h);ctx.stroke();}
 }
 
@@ -1996,11 +2009,11 @@ class BigTree{
     if(Math.random()>.4)this._branch(this.x,this.baseY-h*.5,h*.28,.85,2);
     this.ccx=this.x-this.tw*.2;this.ccy=this.baseY-h*.74;
     // Canopy — layered leaf clusters with depth
-    this.canopy=[];const cw=h*.55,ch=h*.38;
-    for(let i=0;i<RI(22,32);i++){const a=R(0,6.28),d=R(.05,1);
-      const depth=d<.4?0:d<.7?1:2;
-      this.canopy.push({ox:Math.cos(a)*cw*d,oy:Math.sin(a)*ch*d-ch*.25,size:R(20,50),
-        hue:R(95,145),sat:R(18,45),lit:R(12+depth*4,24+depth*4),seed:R(0,1000),a:R(.4+depth*.1,.7+depth*.08),rot:R(-.15,.15),depth});}
+    this.canopy=[];const cw=h*.55,ch=h*.4;
+    for(let i=0;i<RI(32,45);i++){const a=R(0,6.28),d=R(.02,.95);
+      const depth=d<.35?0:d<.65?1:2;
+      this.canopy.push({ox:Math.cos(a)*cw*d,oy:Math.sin(a)*ch*d-ch*.3,size:R(25,55),
+        hue:R(90,145),sat:R(18,45),lit:R(10+depth*4,20+depth*4),seed:R(0,1000),a:R(.5+depth*.1,.8+depth*.06),rot:R(-.15,.15),depth});}
     this.canopy.sort((a,b)=>a.depth-b.depth||(a.oy+a.size)-(b.oy+b.size));
     // Roots — thick, gnarled
     this.roots=[];for(let i=0;i<RI(4,7);i++){const side=(i%2===0?-1:1)*(1+i*.15);
@@ -2319,7 +2332,7 @@ class Garden{
     const sg=ctx.createLinearGradient(0,0,0,HOR+30);
     sg.addColorStop(0,hsl(228+c*10,35+c*10,6+c*5));sg.addColorStop(.25,hsl(235+c*8,30+c*8,10+c*8));
     sg.addColorStop(.5,hsl(250+c*10,25+c*12,18+c*12));sg.addColorStop(.75,hsl(280-c*40,30+c*15,28+c*15));
-    sg.addColorStop(.92,hsl(35+c*10,45+c*20,40+c*18));sg.addColorStop(1,hsl(30+c*8,40+c*15,35+c*12));
+    sg.addColorStop(.92,hsl(35+c*10,40+c*15,28+c*12));sg.addColorStop(1,hsl(30+c*8,35+c*12,20+c*8));
     this._skyGrad=sg;}
     ctx.fillStyle=this._skyGrad;ctx.fillRect(0,0,W,HOR+30);
     const c=this._skyC;const sunX=W*(.55+Math.sin(this.time*.002)*.15);
@@ -2329,7 +2342,7 @@ class Garden{
   }
 
   drawHills(){if(this._hillsOC)ctx.drawImage(this._hillsOC,0,0,W,H);}
-  _renderHills(){const d=window.devicePixelRatio||1;this._hillsOC=document.createElement('canvas');this._hillsOC.width=W*d;this._hillsOC.height=H*d;const hc=this._hillsOC.getContext('2d');hc.setTransform(d,0,0,d,0,0);const layers=[{yOff:-30,col:[120,28,30],alpha:.6,freq:.0005},{yOff:-12,col:[112,32,26],alpha:.7,freq:.001},{yOff:0,col:[105,38,22],alpha:.85,freq:.0015}];for(const l of layers){hc.beginPath();hc.moveTo(0,H);for(let x=0;x<=W;x+=4){const y=groundY(x)+l.yOff+noise.get(x*l.freq+hillSeed+l.yOff,0)*25;hc.lineTo(x,y);}hc.lineTo(W,H);hc.closePath();const hg=hc.createLinearGradient(0,HOR-20,0,H);hg.addColorStop(0,hsl(l.col[0],l.col[1],l.col[2]+12,l.alpha));hg.addColorStop(.5,hsl(l.col[0]-5,l.col[1]+5,l.col[2],l.alpha));hg.addColorStop(1,hsl(l.col[0]-10,l.col[1]+8,l.col[2]-8,l.alpha));hc.fillStyle=hg;hc.fill();}}
+  _renderHills(){const d=window.devicePixelRatio||1;this._hillsOC=document.createElement('canvas');this._hillsOC.width=W*d;this._hillsOC.height=H*d;const hc=this._hillsOC.getContext('2d');hc.setTransform(d,0,0,d,0,0);const layers=[{yOff:-30,col:[130,22,14],alpha:.55,freq:.0005},{yOff:-12,col:[120,26,12],alpha:.7,freq:.001},{yOff:0,col:[110,32,10],alpha:.88,freq:.0015}];for(const l of layers){hc.beginPath();hc.moveTo(0,H);for(let x=0;x<=W;x+=4){const y=groundY(x)+l.yOff+noise.get(x*l.freq+hillSeed+l.yOff,0)*25;hc.lineTo(x,y);}hc.lineTo(W,H);hc.closePath();const hg=hc.createLinearGradient(0,HOR-20,0,H);hg.addColorStop(0,hsl(l.col[0],l.col[1],l.col[2]+12,l.alpha));hg.addColorStop(.5,hsl(l.col[0]-5,l.col[1]+5,l.col[2],l.alpha));hg.addColorStop(1,hsl(l.col[0]-10,l.col[1]+8,l.col[2]-8,l.alpha));hc.fillStyle=hg;hc.fill();}}
 
   drawMist(){for(let i=0;i<5;i++){const x=W*.5+noise.fbm(i*3+this.time*.025,0,2)*W*.6,y=HOR+30+i*20+noise.get(i*7,this.time*.04)*20,r=this._mistR[i];const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(180,200,160,${.018+Math.sin(this.time*.4+i)*.006})`);g.addColorStop(1,'rgba(180,200,160,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);}}
 
