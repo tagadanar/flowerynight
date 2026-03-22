@@ -366,8 +366,12 @@ class NebulaWisps{
 class Aurora{
   constructor(){this.active=false;this.timer=R(45,90);this.time=0;this.duration=0;this.bands=[];}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.time=0;this.duration=R(15,30);this.bands=[];
-      const n=RI(3,6);for(let i=0;i<n;i++)this.bands.push({y:HOR*R(.15,.55),amplitude:R(15,40),wavelength:R(.002,.006),speed:R(.3,.8),hue:pick([140,160,120,180,280,300]),sat:R(40,70),lit:R(45,65),height:R(30,80),seed:R(0,1000)});
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.time=0;this.duration=R(18,35);this.bands=[];
+      const n=RI(2,5);for(let i=0;i<n;i++){
+        const rays=[];for(let r=0;r<RI(5,10);r++)rays.push({x:R(W*.05,W*.95),w:R(1,3),speed:R(.4,1.8)});
+        this.bands.push({y:HOR*R(.12,.5),amplitude:R(15,40),wavelength:R(.002,.006),speed:R(.3,.7),
+          hue:pick([120,135,150,165,180]),hue2:pick([200,260,280,300,320]),
+          sat:R(45,75),lit:R(50,70),height:R(40,100),seed:R(0,1000),rays});}
     }return;}
     this.time+=dt;if(this.time>=this.duration){this.active=false;this.timer=R(50,100);}
   }
@@ -375,27 +379,51 @@ class Aurora{
     if(!this.active)return;
     const t=this.time/this.duration;
     let alpha;if(t<.15)alpha=ease.out(t/.15);else if(t>.8)alpha=1-ease.in((t-.8)/.2);else alpha=1;
-    alpha*=.22; // subtle
+    alpha*=.28;
     for(const b of this.bands){
-      ctx.save();ctx.globalAlpha=alpha*(0.5+0.5*Math.sin(time*0.3+b.seed));
+      const pulse=.5+.5*Math.sin(time*.25+b.seed);
+      ctx.save();ctx.globalAlpha=alpha*pulse;
+      // Curtain shape
       ctx.beginPath();ctx.moveTo(0,b.y);
-      for(let x=0;x<=W;x+=6){
+      for(let x=0;x<=W;x+=8){
         const wave=Math.sin(x*b.wavelength+time*b.speed+b.seed)*b.amplitude;
-        const wave2=Math.sin(x*b.wavelength*2.3+time*b.speed*1.4+b.seed+2)*b.amplitude*.4;
+        const wave2=Math.sin(x*b.wavelength*2.3+time*b.speed*1.3+b.seed+2)*b.amplitude*.3;
         ctx.lineTo(x,b.y+wave+wave2);
       }
-      for(let x=W;x>=0;x-=6){
+      for(let x=W;x>=0;x-=8){
         const wave=Math.sin(x*b.wavelength+time*b.speed+b.seed)*b.amplitude;
-        const wave2=Math.sin(x*b.wavelength*2.3+time*b.speed*1.4+b.seed+2)*b.amplitude*.4;
+        const wave2=Math.sin(x*b.wavelength*2.3+time*b.speed*1.3+b.seed+2)*b.amplitude*.3;
         ctx.lineTo(x,b.y+wave+wave2-b.height);
       }
       ctx.closePath();
+      // Color-shifting gradient (green → teal → purple)
+      const hs=Math.sin(time*.08+b.seed)*18;
       const g=ctx.createLinearGradient(0,b.y-b.height,0,b.y+b.amplitude);
-      g.addColorStop(0,hsl(b.hue,b.sat,b.lit,0));
-      g.addColorStop(.3,hsl(b.hue,b.sat,b.lit,.6));
-      g.addColorStop(.7,hsl(b.hue+20,b.sat-10,b.lit-5,.4));
-      g.addColorStop(1,hsl(b.hue,b.sat,b.lit,0));
+      g.addColorStop(0,hsl(b.hue2+hs,b.sat-10,b.lit+5,0));
+      g.addColorStop(.12,hsl(b.hue2+hs,b.sat-5,b.lit,.15));
+      g.addColorStop(.35,hsl(b.hue+hs,b.sat+5,b.lit+8,.55));
+      g.addColorStop(.6,hsl(b.hue+hs*.5,b.sat,b.lit,.45));
+      g.addColorStop(.8,hsl(b.hue2+hs,b.sat-5,b.lit-5,.18));
+      g.addColorStop(1,hsl(b.hue+hs,b.sat,b.lit,0));
       ctx.fillStyle=g;ctx.fill();
+      // Vertical bright rays (shimmer curtain effect)
+      for(const r of b.rays){
+        const rx=r.x+Math.sin(time*r.speed+r.x*.005)*25;
+        const br=Math.pow(Math.max(0,Math.sin(time*r.speed*1.5+r.x*.01+b.seed)),3);
+        if(br<.08)continue;
+        const wave=Math.sin(rx*b.wavelength+time*b.speed+b.seed)*b.amplitude;
+        const topY=b.y+wave-b.height*.85,botY=b.y+wave+b.amplitude*.2;
+        ctx.strokeStyle=hsl(b.hue+hs,b.sat+10,b.lit+20,br*.3);ctx.lineWidth=r.w;
+        ctx.beginPath();ctx.moveTo(rx,topY);ctx.lineTo(rx+Math.sin(topY*.03)*2,botY);ctx.stroke();
+      }
+      // Bottom edge glow (brighter wavering line)
+      ctx.lineWidth=1.5;ctx.strokeStyle=hsl(b.hue+hs,b.sat+8,b.lit+12,.18);
+      ctx.beginPath();ctx.moveTo(0,b.y);
+      for(let x=0;x<=W;x+=12){
+        const wave=Math.sin(x*b.wavelength+time*b.speed+b.seed)*b.amplitude;
+        const wave2=Math.sin(x*b.wavelength*2.3+time*b.speed*1.3+b.seed+2)*b.amplitude*.3;
+        ctx.lineTo(x,b.y+wave+wave2);
+      }ctx.stroke();
       ctx.restore();
     }
   }
