@@ -2311,6 +2311,76 @@ class BigTree{
 }
 
 // ══════════════════════════════════════════
+// VERY RARE: METEOR IMPACT (every 12-25 min)
+// ══════════════════════════════════════════
+class MeteorImpact{
+  constructor(){this.phase='idle';this.timer=R(720,1500);this.time=0;this.x=0;this.y=0;this.ix=0;this.iy=0;this.trail=[];this.debris=[];this.craterAlpha=0;}
+  update(dt,time,garden){
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='fall';this.time=0;this.timer=R(720,1500);
+      this.x=R(W*.1,W*.5);this.y=-30;this.ix=R(W*.3,W*.7);this.iy=R(HOR+40,H*.75);this.trail=[];this.debris=[];}return;}
+    this.time+=dt;
+    if(this.phase==='fall'){
+      // Meteor falls from sky to impact point over 2s
+      const t=Math.min(this.time/2,1);
+      this.x=this.x+(this.ix-this.x)*t*t;this.y=-30+(this.iy+30)*t*t;
+      // Trail
+      if(Math.random()<dt*40)this.trail.push({x:this.x+R(-3,3),y:this.y+R(-3,3),life:R(.5,1.5),size:R(1,4)});
+      for(const p of this.trail)p.life-=dt;this.trail=this.trail.filter(p=>p.life>0);
+      if(this.time>=2){this.phase='impact';this.time=0;
+        // Spawn debris
+        for(let i=0;i<30;i++){const a=R(0,6.28),sp=R(30,150);
+          this.debris.push({x:this.ix,y:this.iy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-R(20,80),life:R(1,4),size:R(1,5),hue:pick([15,25,35,40,45])});}
+        // Destroy nearby flowers
+        garden.flowers=garden.flowers.filter(f=>{const dx=f.x-this.ix,dy=f.y-this.iy;return dx*dx+dy*dy>120*120;});
+      }
+    }else if(this.phase==='impact'){
+      // Explosion + shockwave
+      for(const d of this.debris){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=60*dt;d.life-=dt;}
+      this.debris=this.debris.filter(d=>d.life>0);
+      this.craterAlpha=Math.max(0,1-this.time/15);
+      for(const p of this.trail)p.life-=dt;this.trail=this.trail.filter(p=>p.life>0);
+      if(this.time>15){this.phase='idle';this.debris=[];this.trail=[];}
+    }
+  }
+  draw(time){
+    if(this.phase==='idle')return;
+    // Trail
+    for(const p of this.trail){const a=cl(p.life/.8,0,1);
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fillStyle=hsl(25,80,60,a*.6);ctx.fill();}
+    // Falling meteor
+    if(this.phase==='fall'){
+      const s=4+this.time*3;
+      // Glow
+      const mg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,s*4);
+      mg.addColorStop(0,'rgba(255,200,100,.4)');mg.addColorStop(.5,'rgba(255,150,50,.1)');mg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(this.x,this.y,s*4,0,6.28);ctx.fillStyle=mg;ctx.fill();
+      // Core
+      ctx.beginPath();ctx.arc(this.x,this.y,s,0,6.28);ctx.fillStyle='rgba(255,240,200,.9)';ctx.fill();
+      ctx.beginPath();ctx.arc(this.x,this.y,s*.5,0,6.28);ctx.fillStyle='rgba(255,255,255,.8)';ctx.fill();
+    }
+    // Impact flash + shockwave
+    if(this.phase==='impact'&&this.time<2){
+      const flash=Math.max(0,1-this.time/.5);
+      if(flash>.01){ctx.fillStyle=`rgba(255,240,200,${flash*.2})`;ctx.fillRect(0,0,W,H);}
+      // Shockwave ring
+      const sw=ease.out(Math.min(this.time/1.5,1))*200;const swa=Math.max(0,1-this.time/1.5)*.4;
+      ctx.beginPath();ctx.arc(this.ix,this.iy,sw,0,6.28);ctx.strokeStyle=`rgba(255,200,100,${swa})`;ctx.lineWidth=3;ctx.stroke();
+    }
+    // Crater
+    if(this.craterAlpha>.01){
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,35,15,0,0,6.28);ctx.fillStyle=`rgba(30,25,15,${this.craterAlpha*.5})`;ctx.fill();
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,25,10,0,0,6.28);ctx.fillStyle=`rgba(20,15,8,${this.craterAlpha*.6})`;ctx.fill();
+      // Scorched ring
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,55,22,0,0,6.28);ctx.strokeStyle=`rgba(50,35,15,${this.craterAlpha*.25})`;ctx.lineWidth=8;ctx.stroke();
+    }
+    // Debris
+    for(const d of this.debris){const a=cl(d.life/1.5,0,1);
+      ctx.beginPath();ctx.arc(d.x,d.y,d.size*a,0,6.28);ctx.fillStyle=hsl(d.hue,70,50,a*.7);ctx.fill();
+      if(d.size>2){ctx.beginPath();ctx.arc(d.x,d.y,d.size*2,0,6.28);ctx.fillStyle=hsl(d.hue,60,45,a*.08);ctx.fill();}}
+  }
+}
+
+// ══════════════════════════════════════════
 // ULTRA RARE: DEATH STAR (every 20-40 min)
 // ══════════════════════════════════════════
 class DeathStar{
@@ -2476,7 +2546,7 @@ class Garden{
     this.snowfall=new Snowfall();
     this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
     this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
-    this.deathStar=new DeathStar();
+    this.meteorImpact=new MeteorImpact();this.deathStar=new DeathStar();
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
     this.waveTimer=R(3,7);
@@ -2563,7 +2633,7 @@ class Garden{
     this.snowfall.update(dt,this.time);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
     this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
-    this.deathStar.update(dt,this.time,this);
+    this.meteorImpact.update(dt,this.time,this);this.deathStar.update(dt,this.time,this);
   }
 
   draw(){
@@ -2629,6 +2699,7 @@ class Garden{
     this.lighthouse.draw();
     this.drawSunlight();
     // Post-processing overlays (on top of everything)
+    this.meteorImpact.draw(this.time);
     this.deathStar.draw(this.time);
     this.eclipse.draw();
     this.lightning.draw();
