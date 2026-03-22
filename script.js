@@ -2283,69 +2283,93 @@ class BigTree{
 // VERY RARE: METEOR IMPACT (every 12-25 min)
 // ══════════════════════════════════════════
 class MeteorImpact{
-  constructor(){this.phase='idle';this.timer=R(360,540);this.time=0;this.x=0;this.y=0;this.ix=0;this.iy=0;this.trail=[];this.debris=[];this.craterAlpha=0;}
+  constructor(){this.phase='idle';this.timer=R(360,540);this.time=0;this.x=0;this.y=0;this.ix=0;this.iy=0;this.trail=[];this.debris=[];this.fire=[];this.craterAlpha=0;this.shake=0;}
   update(dt,time,garden){
     if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='fall';this.time=0;this.timer=R(360,540);
-      this.x=R(W*.1,W*.5);this.y=-30;this.ix=R(W*.3,W*.7);this.iy=R(HOR+40,H*.75);this.trail=[];this.debris=[];}return;}
+      this.startX=R(W*.05,W*.4);this.x=this.startX;this.y=-50;this.ix=R(W*.25,W*.7);this.iy=R(HOR+50,H*.75);this.trail=[];this.debris=[];this.fire=[];this._ashPatches=null;}return;}
     this.time+=dt;
     if(this.phase==='fall'){
-      // Meteor falls from sky to impact point over 2s
-      const t=Math.min(this.time/2,1);
-      this.x=this.x+(this.ix-this.x)*t*t;this.y=-30+(this.iy+30)*t*t;
-      // Trail
-      if(Math.random()<dt*40)this.trail.push({x:this.x+R(-3,3),y:this.y+R(-3,3),life:R(.5,1.5),size:R(1,4)});
-      for(const p of this.trail)p.life-=dt;this.trail=this.trail.filter(p=>p.life>0);
-      if(this.time>=2){this.phase='impact';this.time=0;
-        // Spawn debris
-        for(let i=0;i<30;i++){const a=R(0,6.28),sp=R(30,150);
-          this.debris.push({x:this.ix,y:this.iy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-R(20,80),life:R(1,4),size:R(1,5),hue:pick([15,25,35,40,45])});}
-        // Destroy nearby flowers
-        garden.flowers=garden.flowers.filter(f=>{const dx=f.x-this.ix,dy=f.y-this.iy;return dx*dx+dy*dy>120*120;});
+      const t=Math.min(this.time/2.5,1);
+      this.x=this.startX+(this.ix-this.startX)*t*t;this.y=-50+(this.iy+50)*t*t;
+      // Dense fiery trail
+      for(let i=0;i<3;i++)if(Math.random()<dt*50)this.trail.push({x:this.x+R(-4,4),y:this.y+R(-4,4),vx:R(-15,15),vy:R(-10,5),life:R(.4,1.8),size:R(1,6),hue:pick([10,20,30,40,50])});
+      for(const p of this.trail){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}this.trail=this.trail.filter(p=>p.life>0);
+      // Sky turns orange as meteor approaches
+      if(this.time>=2.5){this.phase='impact';this.time=0;this.shake=12;
+        // Massive debris explosion
+        for(let i=0;i<60;i++){const a=R(0,6.28),sp=R(40,250);
+          this.debris.push({x:this.ix,y:this.iy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-R(30,120),life:R(1,5),size:R(1,7),hue:pick([10,20,30,40,50]),glow:Math.random()>.5});}
+        // Ground fire
+        for(let i=0;i<20;i++)this.fire.push({x:this.ix+R(-80,80),y:this.iy+R(-20,20),size:R(8,25),life:R(3,8),hue:pick([10,20,30,40]),seed:R(0,1000)});
+        // Destroy flowers in large radius
+        garden.flowers=garden.flowers.filter(f=>{const dx=f.x-this.ix,dy=f.y-this.iy;return dx*dx+dy*dy>180*180;});
       }
     }else if(this.phase==='impact'){
-      // Explosion + shockwave
-      for(const d of this.debris){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=60*dt;d.life-=dt;}
+      this.shake=Math.max(0,this.shake-dt*4);
+      for(const d of this.debris){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=80*dt;d.life-=dt;}
       this.debris=this.debris.filter(d=>d.life>0);
-      this.craterAlpha=Math.max(0,1-this.time/15);
-      for(const p of this.trail)p.life-=dt;this.trail=this.trail.filter(p=>p.life>0);
-      if(this.time>15){this.phase='idle';this.debris=[];this.trail=[];}
+      for(const f of this.fire){f.life-=dt;f.size*=.995;}
+      this.fire=this.fire.filter(f=>f.life>0);
+      // Spawn embers from fires
+      if(this.time<6&&Math.random()<dt*15)this.trail.push({x:this.ix+R(-100,100),y:this.iy+R(-30,10),vx:R(-3,3),vy:R(-20,-8),life:R(1,3),size:R(1,3),hue:30});
+      for(const p of this.trail){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;}this.trail=this.trail.filter(p=>p.life>0);
+      this.craterAlpha=Math.max(0,1-this.time/18);
+      if(this.time>18){this.phase='idle';this.debris=[];this.trail=[];this.fire=[];}
     }
   }
   draw(time){
     if(this.phase==='idle')return;
-    // Trail
+    // Screen shake
+    const sx=this.shake>0?(Math.random()-.5)*this.shake:0;
+    const sy=this.shake>0?(Math.random()-.5)*this.shake:0;
+    if(sx||sy){ctx.save();ctx.translate(sx,sy);}
+    // Trail particles
     for(const p of this.trail){const a=cl(p.life/.8,0,1);
-      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fillStyle=hsl(25,80,60,a*.6);ctx.fill();}
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,6.28);ctx.fillStyle=hsl(p.hue||25,85,55,a*.7);ctx.fill();
+      if(p.size>3){ctx.beginPath();ctx.arc(p.x,p.y,p.size*1.5,0,6.28);ctx.fillStyle=hsl(p.hue||25,70,50,a*.12);ctx.fill();}}
     // Falling meteor
     if(this.phase==='fall'){
-      const s=4+this.time*3;
-      // Glow
-      const mg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,s*4);
-      mg.addColorStop(0,'rgba(255,200,100,.4)');mg.addColorStop(.5,'rgba(255,150,50,.1)');mg.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.beginPath();ctx.arc(this.x,this.y,s*4,0,6.28);ctx.fillStyle=mg;ctx.fill();
-      // Core
-      ctx.beginPath();ctx.arc(this.x,this.y,s,0,6.28);ctx.fillStyle='rgba(255,240,200,.9)';ctx.fill();
-      ctx.beginPath();ctx.arc(this.x,this.y,s*.5,0,6.28);ctx.fillStyle='rgba(255,255,255,.8)';ctx.fill();
+      const s=5+this.time*4;const t=this.time/2.5;
+      // Sky warning tint (grows as meteor approaches)
+      ctx.fillStyle=`rgba(255,150,50,${t*.04})`;ctx.fillRect(0,0,W,H);
+      // Huge outer glow
+      const mg=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,s*6);
+      mg.addColorStop(0,'rgba(255,220,100,.5)');mg.addColorStop(.3,'rgba(255,150,50,.2)');mg.addColorStop(.6,'rgba(255,100,30,.05)');mg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(this.x,this.y,s*6,0,6.28);ctx.fillStyle=mg;ctx.fill();
+      // Fireball
+      ctx.beginPath();ctx.arc(this.x,this.y,s,0,6.28);ctx.fillStyle='rgba(255,200,80,.9)';ctx.fill();
+      ctx.beginPath();ctx.arc(this.x,this.y,s*.6,0,6.28);ctx.fillStyle='rgba(255,240,200,.95)';ctx.fill();
+      ctx.beginPath();ctx.arc(this.x,this.y,s*.25,0,6.28);ctx.fillStyle='rgba(255,255,255,.9)';ctx.fill();
     }
-    // Impact flash + shockwave
-    if(this.phase==='impact'&&this.time<2){
-      const flash=Math.max(0,1-this.time/.5);
-      if(flash>.01){ctx.fillStyle=`rgba(255,240,200,${flash*.2})`;ctx.fillRect(0,0,W,H);}
-      // Shockwave ring
-      const sw=ease.out(Math.min(this.time/1.5,1))*200;const swa=Math.max(0,1-this.time/1.5)*.4;
-      ctx.beginPath();ctx.arc(this.ix,this.iy,sw,0,6.28);ctx.strokeStyle=`rgba(255,200,100,${swa})`;ctx.lineWidth=3;ctx.stroke();
+    // Impact effects
+    if(this.phase==='impact'){
+      // Initial blinding flash
+      if(this.time<.8){const flash=Math.max(0,1-this.time/.4);
+        ctx.fillStyle=`rgba(255,250,230,${flash*.5})`;ctx.fillRect(0,0,W,H);}
+      // Multiple shockwave rings
+      for(let i=0;i<3;i++){const delay=i*.3;const st=Math.max(0,this.time-delay);
+        if(st<2){const sw=ease.out(Math.min(st/1.5,1))*(200+i*80);const swa=Math.max(0,1-st/2)*(.4-i*.1);
+          ctx.beginPath();ctx.arc(this.ix,this.iy,sw,0,6.28);ctx.strokeStyle=`rgba(255,${180-i*40},${60-i*20},${swa})`;ctx.lineWidth=4-i;ctx.stroke();}}
+      // Ground fire
+      for(const f of this.fire){const a=cl(f.life/2,0,1);const flicker=.6+.4*Math.sin(time*8+f.seed);
+        const fg=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y-f.size*.5,f.size);
+        fg.addColorStop(0,hsl(f.hue,90,60,a*flicker*.6));fg.addColorStop(.4,hsl(f.hue+10,80,50,a*flicker*.3));fg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(f.x,f.y-f.size*.3,f.size,0,6.28);ctx.fillStyle=fg;ctx.fill();}
     }
     // Crater
     if(this.craterAlpha>.01){
-      ctx.beginPath();ctx.ellipse(this.ix,this.iy,35,15,0,0,6.28);ctx.fillStyle=`rgba(30,25,15,${this.craterAlpha*.5})`;ctx.fill();
-      ctx.beginPath();ctx.ellipse(this.ix,this.iy,25,10,0,0,6.28);ctx.fillStyle=`rgba(20,15,8,${this.craterAlpha*.6})`;ctx.fill();
-      // Scorched ring
-      ctx.beginPath();ctx.ellipse(this.ix,this.iy,55,22,0,0,6.28);ctx.strokeStyle=`rgba(50,35,15,${this.craterAlpha*.25})`;ctx.lineWidth=8;ctx.stroke();
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,50,20,0,0,6.28);ctx.fillStyle=`rgba(25,20,10,${this.craterAlpha*.5})`;ctx.fill();
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,35,14,0,0,6.28);ctx.fillStyle=`rgba(15,10,5,${this.craterAlpha*.6})`;ctx.fill();
+      ctx.beginPath();ctx.ellipse(this.ix,this.iy,70,28,0,0,6.28);ctx.strokeStyle=`rgba(50,35,15,${this.craterAlpha*.2})`;ctx.lineWidth=10;ctx.stroke();
+      // Smoke wisps rising from crater
+      if(this.craterAlpha>.1){for(let i=0;i<3;i++){const sx2=this.ix+Math.sin(time*.5+i*2)*20;const sy2=this.iy-15-Math.sin(time*.3+i*1.5)*10-i*12;
+        ctx.beginPath();ctx.arc(sx2,sy2,8+i*4,0,6.28);ctx.fillStyle=`rgba(60,50,40,${this.craterAlpha*.04})`;ctx.fill();}}
     }
     // Debris
     for(const d of this.debris){const a=cl(d.life/1.5,0,1);
-      ctx.beginPath();ctx.arc(d.x,d.y,d.size*a,0,6.28);ctx.fillStyle=hsl(d.hue,70,50,a*.7);ctx.fill();
-      if(d.size>2){ctx.beginPath();ctx.arc(d.x,d.y,d.size*2,0,6.28);ctx.fillStyle=hsl(d.hue,60,45,a*.08);ctx.fill();}}
+      ctx.beginPath();ctx.arc(d.x,d.y,d.size*a,0,6.28);ctx.fillStyle=hsl(d.hue,80,55,a*.8);ctx.fill();
+      if(d.glow){ctx.beginPath();ctx.arc(d.x,d.y,d.size*2.5,0,6.28);ctx.fillStyle=hsl(d.hue,70,50,a*.1);ctx.fill();}}
+    if(sx||sy)ctx.restore();
   }
 }
 
@@ -2353,40 +2377,38 @@ class MeteorImpact{
 // ULTRA RARE: DEATH STAR (every 20-40 min)
 // ══════════════════════════════════════════
 class DeathStar{
-  constructor(){this.phase='idle';this.timer=R(420,600);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];}
+  constructor(){this.phase='idle';this.timer=R(420,600);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];this.fires=[];}
   update(dt,time,garden){
-    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(420,600);this.x=W*.8;this.y=HOR*.15;this.size=2;this.embers=[];}return;}
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(420,600);this.x=W+80;this.y=HOR*.18;this.size=2;this.embers=[];this.fires=[];this._ashPatches=null;}return;}
     this.time+=dt;
     if(this.phase==='enter'){
-      // Grow from tiny dot to large sphere over 10s
-      this.size=2+ease.out(Math.min(this.time/10,1))*65;
-      this.x=W*.8-this.time*3;this.y=HOR*.15+Math.sin(this.time*.2)*5;
-      if(this.time>10){this.phase='charge';this.time=0;}
+      this.size=2+ease.out(Math.min(this.time/12,1))*80;
+      this.x=W+80-this.time*12;this.y=HOR*.18+Math.sin(this.time*.15)*8;
+      if(this.time>12){this.phase='charge';this.time=0;}
     }else if(this.phase==='charge'){
-      // Dish glows green, pulsing
-      if(this.time>4){this.phase='fire';this.time=0;}
+      if(this.time>5){this.phase='fire';this.time=0;this.shake=15;}
     }else if(this.phase==='fire'){
-      // Laser shoots down to ground
-      this.laserY=HOR*.3+ease.out(Math.min(this.time/.8,1))*(H-HOR*.3);
-      this.shake=Math.max(0,(1-this.time/2))*6;
-      if(this.time>.5){
-        // Kill all flowers
-        for(const f of garden.flowers){if(f.phase<5){f.phase=5;f.pt=0;f.wiltDur=.5;f.opacity=0;}}
+      this.laserY=HOR*.2+ease.out(Math.min(this.time/.6,1))*(H-HOR*.2);
+      this.shake=Math.max(0,15-this.time*3);
+      if(this.time>.4){
+        for(const f of garden.flowers){if(f.phase<5){f.phase=5;f.pt=0;f.wiltDur=.3;f.opacity=0;}}
         garden.flowers=[];
       }
-      if(this.time>2){this.phase='ash';this.time=0;this.ashAlpha=1;}
+      // Spawn ground fires along laser sweep
+      if(this.time<2&&Math.random()<dt*20){const dishX=this.x+this.size*.35;
+        this.fires.push({x:dishX+R(-100,100),y:R(HOR+10,H*.9),size:R(10,30),life:R(4,10),seed:R(0,1000),hue:pick([10,20,30])});}
+      if(this.time>3){this.phase='ash';this.time=0;this.ashAlpha=1;
+        // Massive ember burst
+        for(let i=0;i<60;i++)this.embers.push({x:R(0,W),y:R(HOR,H),vx:R(-8,8),vy:R(-25,-5),life:R(1.5,5),size:R(1,4),hue:pick([10,20,30,40])});}
     }else if(this.phase==='ash'){
-      // Scorched ground, embers
-      this.ashAlpha=Math.max(0,1-this.time/12);
-      if(Math.random()<dt*8&&this.embers.length<40){
-        this.embers.push({x:R(0,W),y:R(HOR+10,H),vx:R(-5,5),vy:R(-15,-5),life:R(1,3),size:R(1,3)});
-      }
-      for(const e of this.embers){e.x+=e.vx*dt;e.y+=e.vy*dt;e.life-=dt;}
-      this.embers=this.embers.filter(e=>e.life>0);
-      if(this.time>12){this.phase='leave';this.time=0;}
+      this.ashAlpha=Math.max(0,1-this.time/14);
+      if(Math.random()<dt*12&&this.embers.length<80)this.embers.push({x:R(0,W),y:R(HOR+10,H),vx:R(-5,5),vy:R(-18,-5),life:R(1,3),size:R(1,3),hue:pick([15,25,35])});
+      for(const e of this.embers){e.x+=e.vx*dt;e.y+=e.vy*dt;e.life-=dt;}this.embers=this.embers.filter(e=>e.life>0);
+      for(const f of this.fires){f.life-=dt;f.size*=.99;}this.fires=this.fires.filter(f=>f.life>0);
+      if(this.time>14){this.phase='leave';this.time=0;}
     }else if(this.phase==='leave'){
-      this.x+=25*dt;this.size=Math.max(2,this.size-dt*5);
-      if(this.time>8){this.phase='idle';this.embers=[];}
+      this.x+=30*dt;this.y-=5*dt;this.size=Math.max(2,this.size-dt*4);
+      if(this.time>10){this.phase='idle';this.embers=[];this.fires=[];}
     }
   }
   draw(time){
@@ -2394,80 +2416,98 @@ class DeathStar{
     const sx=this.shake>0?(Math.random()-.5)*this.shake:0;
     const sy=this.shake>0?(Math.random()-.5)*this.shake:0;
     if(sx||sy){ctx.save();ctx.translate(sx,sy);}
-    // Ash overlay on ground
+    // Ash overlay
     if(this.ashAlpha>.01){
-      ctx.fillStyle=`rgba(20,18,15,${this.ashAlpha*.6})`;ctx.fillRect(0,HOR,W,H-HOR);
-      // Scorched patches
-      if(!this._ashPatches){this._ashPatches=[];for(let i=0;i<8;i++)this._ashPatches.push({x:W*(.1+i*.11),y:HOR+R(20,80),w:R(30,60),h:R(10,25)});}
-      ctx.fillStyle=`rgba(40,30,20,${this.ashAlpha*.3})`;
+      ctx.fillStyle=`rgba(15,12,8,${this.ashAlpha*.65})`;ctx.fillRect(0,HOR,W,H-HOR);
+      if(!this._ashPatches){this._ashPatches=[];for(let i=0;i<12;i++)this._ashPatches.push({x:R(W*.05,W*.95),y:HOR+R(15,H*.4),w:R(30,80),h:R(10,30)});}
+      ctx.fillStyle=`rgba(35,25,15,${this.ashAlpha*.25})`;
       for(const p of this._ashPatches){ctx.beginPath();ctx.ellipse(p.x,p.y,p.w,p.h,0,0,6.28);ctx.fill();}
+      // Ground fires
+      for(const f of this.fires){const a=cl(f.life/2,0,1);const flicker=.6+.4*Math.sin(time*10+f.seed);
+        const fg=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y-f.size*.4,f.size);
+        fg.addColorStop(0,hsl(f.hue,90,55,a*flicker*.5));fg.addColorStop(.5,hsl(f.hue+15,80,45,a*flicker*.2));fg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(f.x,f.y-f.size*.2,f.size,0,6.28);ctx.fillStyle=fg;ctx.fill();}
       // Embers
       for(const e of this.embers){const a=cl(e.life/1,0,1);
-        ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,6.28);ctx.fillStyle=hsl(pick([15,25,35]),80,55,a*.7);ctx.fill();
-        ctx.beginPath();ctx.arc(e.x,e.y,e.size*2,0,6.28);ctx.fillStyle=hsl(20,60,50,a*.1);ctx.fill();}
+        ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,6.28);ctx.fillStyle=hsl(e.hue,85,55,a*.8);ctx.fill();
+        ctx.beginPath();ctx.arc(e.x,e.y,e.size*2.5,0,6.28);ctx.fillStyle=hsl(e.hue,70,50,a*.08);ctx.fill();}
     }
     // Death Star sphere
-    if(this.phase!=='ash'||this.time<3){
+    if(this.phase!=='ash'||this.time<4){
       const ds=this.size,dx=this.x,dy=this.y;
-      const fadeOut=this.phase==='leave'?Math.max(0,1-this.time/5):1;
+      const fadeOut=this.phase==='leave'?Math.max(0,1-this.time/6):1;
       ctx.save();ctx.globalAlpha=fadeOut;
-      // Base sphere
-      const sg=ctx.createRadialGradient(dx-ds*.15,dy-ds*.15,0,dx,dy,ds);
-      sg.addColorStop(0,'#8a8a8a');sg.addColorStop(.3,'#6a6a6a');sg.addColorStop(.7,'#4a4a4a');sg.addColorStop(1,'#2a2a2a');
+      // Menacing green tint in sky during approach
+      if(this.phase==='enter'||this.phase==='charge'){const ap=this.phase==='enter'?this.time/12:.5+this.time/10;
+        ctx.fillStyle=`rgba(20,60,20,${ap*.03})`;ctx.fillRect(0,0,W,HOR);}
+      // Base sphere with better shading
+      const sg=ctx.createRadialGradient(dx-ds*.2,dy-ds*.2,ds*.1,dx,dy,ds);
+      sg.addColorStop(0,'#9a9a9a');sg.addColorStop(.3,'#7a7a7a');sg.addColorStop(.6,'#4a4a4a');sg.addColorStop(1,'#1a1a1a');
       ctx.beginPath();ctx.arc(dx,dy,ds,0,6.28);ctx.fillStyle=sg;ctx.fill();
-      // Equatorial trench (dark band)
       if(ds>15){
         ctx.save();ctx.beginPath();ctx.arc(dx,dy,ds,0,6.28);ctx.clip();
-        ctx.fillStyle='rgba(15,15,15,.4)';ctx.fillRect(dx-ds,dy-ds*.06,ds*2,ds*.12);
-        // Surface detail lines
-        ctx.strokeStyle='rgba(30,30,30,.2)';ctx.lineWidth=.5;ctx.beginPath();
-        for(let i=0;i<6;i++){const ly=dy-ds*.8+i*ds*.32;ctx.moveTo(dx-ds,ly);ctx.lineTo(dx+ds,ly);}
-        for(let i=0;i<6;i++){const a=i*.5+.3;ctx.moveTo(dx+Math.cos(a)*ds,dy+Math.sin(a)*ds*.3);ctx.lineTo(dx+Math.cos(a+.3)*ds,dy-Math.sin(a+.3)*ds*.3);}
+        // Equatorial trench
+        ctx.fillStyle='rgba(10,10,10,.5)';ctx.fillRect(dx-ds,dy-ds*.07,ds*2,ds*.14);
+        // Surface panels
+        ctx.strokeStyle='rgba(40,40,40,.2)';ctx.lineWidth=.5;ctx.beginPath();
+        for(let i=0;i<8;i++){const ly=dy-ds*.9+i*ds*.25;ctx.moveTo(dx-ds,ly);ctx.lineTo(dx+ds,ly);}
+        for(let i=0;i<8;i++){const a=i*.4+.2;ctx.moveTo(dx+Math.cos(a)*ds,dy+Math.sin(a)*ds*.4);ctx.lineTo(dx+Math.cos(a+.25)*ds,dy-Math.sin(a+.25)*ds*.4);}
         ctx.stroke();
-        // Superlaser dish (concave circle in upper-right)
-        const dishX=dx+ds*.35,dishY=dy-ds*.25,dishR=ds*.22;
-        ctx.beginPath();ctx.arc(dishX,dishY,dishR,0,6.28);
-        ctx.fillStyle='rgba(10,10,10,.5)';ctx.fill();
-        ctx.beginPath();ctx.arc(dishX,dishY,dishR*.6,0,6.28);
-        ctx.fillStyle='rgba(5,5,5,.6)';ctx.fill();
+        // Superlaser dish
+        const dishX=dx+ds*.35,dishY=dy-ds*.25,dishR=ds*.25;
+        ctx.beginPath();ctx.arc(dishX,dishY,dishR,0,6.28);ctx.fillStyle='rgba(8,8,8,.6)';ctx.fill();
+        ctx.beginPath();ctx.arc(dishX,dishY,dishR*.65,0,6.28);ctx.fillStyle='rgba(3,3,3,.7)';ctx.fill();
+        ctx.beginPath();ctx.arc(dishX,dishY,dishR*.3,0,6.28);ctx.fillStyle='rgba(0,0,0,.8)';ctx.fill();
         ctx.restore();
-        // Charge glow
+        // Charge glow — increasingly dramatic
         if(this.phase==='charge'){
-          const cp=Math.min(this.time/4,1);const pulse=.5+.5*Math.sin(this.time*6);
-          const cg=ctx.createRadialGradient(dishX,dishY,0,dishX,dishY,dishR*2);
-          cg.addColorStop(0,`rgba(100,255,100,${cp*pulse*.4})`);
-          cg.addColorStop(.5,`rgba(50,200,50,${cp*pulse*.15})`);
-          cg.addColorStop(1,'rgba(0,0,0,0)');
-          ctx.beginPath();ctx.arc(dishX,dishY,dishR*2,0,6.28);ctx.fillStyle=cg;ctx.fill();
+          const cp=ease.out(Math.min(this.time/5,1));const pulse=.5+.5*Math.sin(this.time*4+this.time*this.time*.5);
+          // Multiple converging beams toward dish
+          for(let i=0;i<6;i++){const a=i*1.047+this.time*.5;const bx=dx+Math.cos(a)*ds*.8,by=dy+Math.sin(a)*ds*.8;
+            ctx.strokeStyle=`rgba(100,255,100,${cp*pulse*.15})`;ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(dishX,dishY);ctx.stroke();}
+          // Central glow growing
+          const cg=ctx.createRadialGradient(dishX,dishY,0,dishX,dishY,dishR*(1+cp*2));
+          cg.addColorStop(0,`rgba(120,255,120,${cp*pulse*.5})`);cg.addColorStop(.3,`rgba(80,220,80,${cp*pulse*.2})`);
+          cg.addColorStop(.7,`rgba(40,150,40,${cp*pulse*.06})`);cg.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.beginPath();ctx.arc(dishX,dishY,dishR*(1+cp*2),0,6.28);ctx.fillStyle=cg;ctx.fill();
+          // Screen flicker on charge pulses
+          if(pulse>.9){ctx.fillStyle=`rgba(50,255,50,${cp*.02})`;ctx.fillRect(0,0,W,H);}
         }
-        // Laser beam
+        // FIRE — massive laser
         if(this.phase==='fire'){
-          const la=Math.min(this.time/.3,1);
-          const lx=dishX,ly2=dishY;
-          // Main beam
+          const la=Math.min(this.time/.2,1);const dishX2=dx+ds*.35,dishY2=dy-ds*.25;
           ctx.save();ctx.globalAlpha=la;
-          const lg=ctx.createLinearGradient(lx-8,0,lx+8,0);
-          lg.addColorStop(0,'rgba(0,100,0,0)');lg.addColorStop(.3,`rgba(50,255,50,.3)`);
-          lg.addColorStop(.5,`rgba(150,255,150,.6)`);lg.addColorStop(.7,`rgba(50,255,50,.3)`);
-          lg.addColorStop(1,'rgba(0,100,0,0)');
-          ctx.fillStyle=lg;ctx.fillRect(lx-15,ly2,30,this.laserY-ly2);
-          // Bright core
-          ctx.fillStyle=`rgba(200,255,200,${la*.5})`;ctx.fillRect(lx-2,ly2,4,this.laserY-ly2);
-          // Impact glow
+          // Green flash across entire sky
+          if(this.time<.5){const gf=Math.max(0,1-this.time/.3);ctx.fillStyle=`rgba(50,255,50,${gf*.15})`;ctx.fillRect(0,0,W,H);}
+          // Wide outer beam glow
+          const lg2=ctx.createLinearGradient(dishX2-30,0,dishX2+30,0);
+          lg2.addColorStop(0,'rgba(0,80,0,0)');lg2.addColorStop(.2,'rgba(30,200,30,.15)');lg2.addColorStop(.5,'rgba(80,255,80,.35)');lg2.addColorStop(.8,'rgba(30,200,30,.15)');lg2.addColorStop(1,'rgba(0,80,0,0)');
+          ctx.fillStyle=lg2;ctx.fillRect(dishX2-30,dishY2,60,this.laserY-dishY2);
+          // Inner beam
+          const lg=ctx.createLinearGradient(dishX2-8,0,dishX2+8,0);
+          lg.addColorStop(0,'rgba(0,150,0,0)');lg.addColorStop(.3,'rgba(100,255,100,.5)');lg.addColorStop(.5,'rgba(200,255,200,.8)');lg.addColorStop(.7,'rgba(100,255,100,.5)');lg.addColorStop(1,'rgba(0,150,0,0)');
+          ctx.fillStyle=lg;ctx.fillRect(dishX2-8,dishY2,16,this.laserY-dishY2);
+          // White-hot core
+          ctx.fillStyle=`rgba(220,255,220,${la*.6})`;ctx.fillRect(dishX2-2,dishY2,4,this.laserY-dishY2);
+          // Impact explosion at ground
           if(this.laserY>HOR){
-            const ig=ctx.createRadialGradient(lx,this.laserY,0,lx,this.laserY,80*la);
-            ig.addColorStop(0,`rgba(150,255,100,${la*.3})`);ig.addColorStop(.5,`rgba(100,200,50,${la*.1})`);
-            ig.addColorStop(1,'rgba(0,0,0,0)');
-            ctx.beginPath();ctx.arc(lx,this.laserY,80*la,0,6.28);ctx.fillStyle=ig;ctx.fill();
-            // Spreading destruction wave
-            const spread=ease.out(Math.min((this.time-.3)/1.5,1))*W;
-            ctx.fillStyle=`rgba(255,200,100,${la*.08})`;ctx.fillRect(lx-spread,HOR,spread*2,H-HOR);
+            const ig=ctx.createRadialGradient(dishX2,this.laserY,0,dishX2,this.laserY,120*la);
+            ig.addColorStop(0,`rgba(200,255,150,${la*.4})`);ig.addColorStop(.3,`rgba(150,255,100,${la*.2})`);
+            ig.addColorStop(.6,`rgba(100,200,50,${la*.08})`);ig.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.beginPath();ctx.arc(dishX2,this.laserY,120*la,0,6.28);ctx.fillStyle=ig;ctx.fill();
+            // Destruction wave sweeping across ground
+            const spread=ease.out(Math.min((this.time-.2)/2,1))*W*.6;
+            const waveA=Math.max(0,1-this.time/2.5)*.12;
+            ctx.fillStyle=`rgba(255,220,100,${waveA})`;ctx.fillRect(dishX2-spread,HOR,spread*2,H-HOR);
+            // Fire tongues at impact point
+            for(let i=0;i<5;i++){const fx=dishX2+Math.sin(time*8+i*1.3)*15;const fh=20+Math.sin(time*6+i*2)*10;
+              ctx.fillStyle=`rgba(255,${150+i*20},50,${la*.15})`;ctx.fillRect(fx-3,this.laserY-fh,6,fh);}
           }
           ctx.restore();
         }
       }
-      // Outline glow
-      ctx.beginPath();ctx.arc(dx,dy,ds+1,0,6.28);ctx.strokeStyle='rgba(100,100,120,.15)';ctx.lineWidth=1;ctx.stroke();
+      ctx.beginPath();ctx.arc(dx,dy,ds+1,0,6.28);ctx.strokeStyle='rgba(80,100,80,.12)';ctx.lineWidth=1;ctx.stroke();
       ctx.restore();
     }
     if(sx||sy)ctx.restore();
