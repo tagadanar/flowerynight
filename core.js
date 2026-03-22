@@ -47,6 +47,10 @@ const PAL={
   fox:{p:()=>({h:pick([R(290,320),R(340,355)]),s:R(40,65),l:R(65,82)}),c:()=>({h:R(340,355),s:R(30,50),l:R(90,97)}),st:()=>({h:R(100,130),s:R(25,45),l:R(30,45)})},
   cosm:{p:()=>({h:pick([R(320,345),R(0,12),R(290,310)]),s:R(50,75),l:R(68,85)}),c:()=>({h:R(45,58),s:R(80,98),l:R(55,68)}),st:()=>({h:R(100,128),s:R(30,50),l:R(32,46)})},
   bell:{p:()=>({h:R(225,260),s:R(45,70),l:R(50,68)}),c:()=>({h:R(55,70),s:R(40,60),l:R(85,95)}),st:()=>({h:R(95,125),s:R(28,45),l:R(30,45)})},
+  tulipRed:{p:()=>({h:R(350,370)%360,s:R(70,95),l:R(45,60)}),c:()=>({h:R(55,65),s:R(70,90),l:R(55,70)}),st:()=>({h:R(105,130),s:R(30,50),l:R(28,42)})},
+  tulipYel:{p:()=>({h:R(45,58),s:R(85,100),l:R(60,75)}),c:()=>({h:R(38,48),s:R(60,80),l:R(40,55)}),st:()=>({h:R(100,125),s:R(32,50),l:R(28,42)})},
+  tulipPink:{p:()=>({h:R(320,345),s:R(55,80),l:R(65,82)}),c:()=>({h:R(48,60),s:R(65,85),l:R(58,72)}),st:()=>({h:R(105,130),s:R(30,48),l:R(28,42)})},
+  tulipPurp:{p:()=>({h:R(270,295),s:R(45,70),l:R(40,58)}),c:()=>({h:R(50,62),s:R(60,80),l:R(60,75)}),st:()=>({h:R(100,128),s:R(28,45),l:R(28,42)})},
 };
 
 // ── PETAL SHAPES ──
@@ -61,6 +65,7 @@ const PSHAPES={
   spiky:(c,s,o)=>{const w=s*.18*o,h=s*1.2*o;c.moveTo(0,0);c.bezierCurveTo(-w*.8,-h*.2,-w*1.5,-h*.5,-w*.3,-h*.8);c.quadraticCurveTo(0,-h*1.1,w*.3,-h*.8);c.bezierCurveTo(w*1.5,-h*.5,w*.8,-h*.2,0,0);},
   heart:(c,s,o)=>{const w=s*.42*o,h=s*.95*o;c.moveTo(0,0);c.bezierCurveTo(-w*.3,-h*.1,-w*1.2,-h*.4,-w*.85,-h*.75);c.bezierCurveTo(-w*.5,-h*1.1,0,-h*.85,0,-h*.7);c.bezierCurveTo(0,-h*.85,w*.5,-h*1.1,w*.85,-h*.75);c.bezierCurveTo(w*1.2,-h*.4,w*.3,-h*.1,0,0);},
   elongated:(c,s,o)=>{const w=s*.22*o,h=s*1.3*o;c.moveTo(0,0);c.bezierCurveTo(-w,-h*.3,-w*.9,-h*.7,-w*.4,-h*.95);c.quadraticCurveTo(0,-h*1.05,w*.4,-h*.95);c.bezierCurveTo(w*.9,-h*.7,w,-h*.3,0,0);},
+  tulip:(c,s,o)=>{const w=s*.4*o,h=s*1.1*o;c.moveTo(0,0);c.bezierCurveTo(-w*.3,-h*.15,-w*1.1,-h*.4,-w*.8,-h*.75);c.bezierCurveTo(-w*.5,-h*1.05,0,-h*1.15,0,-h);c.bezierCurveTo(0,-h*1.15,w*.5,-h*1.05,w*.8,-h*.75);c.bezierCurveTo(w*1.1,-h*.4,w*.3,-h*.15,0,0);},
 };
 function petalPath(type,size){const fn=PSHAPES[type]||PSHAPES.round;return{draw:(c2,o)=>{c2.beginPath();fn(c2,size,o);c2.closePath();}};}
 
@@ -78,6 +83,10 @@ const SPECIES=[
   {n:'fox',pc:[5,6],pt:'bell',ps:[13,22],ly:1,pl:'fox',cs:.15,sc:[0,2]},
   {n:'cosm',pc:[8,8],pt:'wide',ps:[20,34],ly:1,pl:'cosm',cs:.18,sc:[5,8]},
   {n:'bell',pc:[5,6],pt:'bell',ps:[10,18],ly:1,pl:'bell',cs:.12,sc:[0,2]},
+  {n:'tulipR',pc:[6,6],pt:'tulip',ps:[22,36],ly:[1,2],pl:'tulipRed',cs:.1,sc:[0,0]},
+  {n:'tulipY',pc:[6,6],pt:'tulip',ps:[22,36],ly:[1,2],pl:'tulipYel',cs:.1,sc:[0,0]},
+  {n:'tulipP',pc:[6,6],pt:'tulip',ps:[20,32],ly:[1,2],pl:'tulipPink',cs:.1,sc:[0,0]},
+  {n:'tulipV',pc:[6,6],pt:'tulip',ps:[20,32],ly:[1,2],pl:'tulipPurp',cs:.1,sc:[0,0]},
 ];
 
 // ══════════════════════════════════════════
