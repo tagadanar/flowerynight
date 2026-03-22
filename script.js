@@ -796,7 +796,7 @@ class WaveEvent{
   update(dt,garden){
     this.time+=dt;
     const ready=this.queue.filter(s=>s.delay<=this.time);
-    for(const s of ready){const x=cl(s.x,W*.03,W*.97),y=cl(s.y,HOR+5,H*.96);const ds=.3+(y-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(x,y,ds*R(.65,1.3),s.sp));}
+    for(const s of ready){const x=cl(s.x,W*.03,W*.97),y=cl(s.y,HOR+5,H*.96);if(garden.pond&&garden.pond.contains(x,y))continue;const ds=.3+(y-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(x,y,ds*R(.65,1.3),s.sp));}
     this.queue=this.queue.filter(s=>s.delay>this.time);
     if(this.queue.length===0)this.done=true;
   }
@@ -1233,7 +1233,7 @@ class GreatBloom{
       // Massive spawn wave
       if(this.phaseTime<.1){
         for(let i=0;i<30;i++){
-          const x=R(W*.03,W*.97),y=R(HOR+8,H*.95);
+          let x,y;do{x=R(W*.03,W*.97);y=R(HOR+8,H*.95);}while(garden.pond&&garden.pond.contains(x,y));
           const ds=.3+(y-HOR)/(H-HOR)*.9;
           const f=new Flower(x,y,ds*R(.6,1.35));
           f.bloomDur=R(1.5,3); // fast bloom
@@ -1551,15 +1551,16 @@ class GlowMushrooms{
 // ══════════════════════════════════════════
 class Pond{
   constructor(){
-    this.x=R(W*.2,W*.8);this.y=R(HOR+60,H*.85);this.w=R(80,140);this.h=R(30,50);
-    this.ripples=[];this.rt=R(1,4);
+    this.x=R(W*.25,W*.75);this.y=R(HOR+70,H*.83);this.w=R(160,260);this.h=R(55,90);
+    this.ripples=[];this.rt=R(1,4);this.rw=this.w*.55;this.rh=this.h*.55;
     // Lily pads
-    this.lilies=[];for(let i=0;i<RI(3,7);i++){const a=R(0,6.28),d=R(.2,.8);this.lilies.push({ox:Math.cos(a)*this.w*.4*d,oy:Math.sin(a)*this.h*.35*d,size:R(5,10),rot:R(0,6.28),hasFlower:Math.random()>.6,flowerHue:pick([340,350,45,300]),bobPhase:R(0,6.28),bobSpeed:R(.5,1.2)});}
+    this.lilies=[];for(let i=0;i<RI(5,12);i++){const a=R(0,6.28),d=R(.2,.85);this.lilies.push({ox:Math.cos(a)*this.w*.4*d,oy:Math.sin(a)*this.h*.35*d,size:R(6,13),rot:R(0,6.28),hasFlower:Math.random()>.55,flowerHue:pick([340,350,45,300,320]),bobPhase:R(0,6.28),bobSpeed:R(.5,1.2)});}
     // Reeds around edge
-    this.reeds=[];for(let i=0;i<RI(6,14);i++){const side=R(0,6.28);const edge=R(.85,1.1);this.reeds.push({ox:Math.cos(side)*this.w*.5*edge,oy:Math.sin(side)*this.h*.45*edge,h:R(15,35),w:R(1,2),seed:R(0,1000),hasTop:Math.random()>.4});}
+    this.reeds=[];for(let i=0;i<RI(10,20);i++){const side=R(0,6.28);const edge=R(.85,1.1);this.reeds.push({ox:Math.cos(side)*this.w*.5*edge,oy:Math.sin(side)*this.h*.45*edge,h:R(18,42),w:R(1,2.5),seed:R(0,1000),hasTop:Math.random()>.4});}
     // Fish
     this.fish=[];for(let i=0;i<RI(2,5);i++)this.fish.push({ox:R(-.3,.3)*this.w,oy:R(-.2,.2)*this.h,speed:R(5,15),dir:Math.random()>.5?1:-1,size:R(2,4),seed:R(0,1000),jumpTimer:R(8,25),jumping:false,jumpY:0,jumpVy:0});
   }
+  contains(x,y){const dx=(x-this.x)/this.rw,dy=(y-this.y)/this.rh;return dx*dx+dy*dy<1.15;}
   update(dt,time){
     this.rt-=dt;if(this.rt<=0){this.rt=R(1.5,5);this.ripples.push({x:this.x+R(-this.w*.35,this.w*.35),y:this.y+R(-this.h*.25,this.h*.25),r:0,a:1});}
     for(const r of this.ripples){r.r+=12*dt;r.a-=dt*.35;}this.ripples=this.ripples.filter(r=>r.a>0);
@@ -1718,7 +1719,7 @@ class CloverPatch{
 // ══════════════════════════════════════════
 class FallenLog{
   constructor(){
-    this.x=R(W*.15,W*.85);this.y=R(HOR+45,H*.85);this.w=R(50,80);this.rot=R(-.08,.08);this.th=R(5,8);
+    this.x=R(W*.15,W*.85);this.y=R(HOR+45,H*.85);this.w=R(80,130);this.rot=R(-.08,.08);this.th=R(7,12);
     this.bark=[];for(let i=0;i<RI(6,10);i++)this.bark.push({ox:R(-this.w*.45,this.w*.45),w:R(1,3)});
     this.moss=[];for(let i=0;i<RI(4,8);i++)this.moss.push({ox:R(-this.w*.4,this.w*.35),sz:R(3,7),szh:R(2,4),r:R(-.3,.3),hue:R(90,140)});
     this.shrooms=[];for(let i=0;i<RI(0,4);i++)this.shrooms.push({ox:R(-this.w*.35,this.w*.35),sz:R(2,4),hue:pick([30,35,350,40])});
@@ -1843,6 +1844,42 @@ class Lighthouse{
 }
 
 // ══════════════════════════════════════════
+// RARE: BANNER PLANE
+// ══════════════════════════════════════════
+class BannerPlane{
+  constructor(){this.active=false;this.timer=R(600,1200);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1200);const fl=Math.random()>.5;this.x=fl?-180:W+180;this.y=R(HOR*.12,HOR*.4);this.vx=(fl?1:-1)*R(30,55);this.sway=0;}return;}
+    this.x+=this.vx*dt;this.sway=Math.sin(this.x*.008)*3;if((this.vx>0&&this.x>W+200)||(this.vx<0&&this.x<-200))this.active=false;}
+  draw(){if(!this.active)return;const py=this.y+this.sway;ctx.save();ctx.translate(this.x,py);if(this.vx<0)ctx.scale(-1,1);
+    // Plane body
+    ctx.fillStyle='rgba(200,200,210,.5)';ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-8,-2);ctx.lineTo(-10,0);ctx.lineTo(-8,2);ctx.closePath();ctx.fill();
+    // Wings
+    ctx.beginPath();ctx.moveTo(2,-1);ctx.lineTo(6,-6);ctx.lineTo(-2,-5);ctx.lineTo(-2,-1);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(2,1);ctx.lineTo(6,5);ctx.lineTo(-2,4);ctx.lineTo(-2,1);ctx.closePath();ctx.fill();
+    // Tail
+    ctx.beginPath();ctx.moveTo(-8,-2);ctx.lineTo(-12,-5);ctx.lineTo(-10,-2);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(-8,2);ctx.lineTo(-12,4);ctx.lineTo(-10,2);ctx.closePath();ctx.fill();
+    // Rope to banner
+    ctx.strokeStyle='rgba(150,150,150,.3)';ctx.lineWidth=.4;ctx.beginPath();ctx.moveTo(-10,0);ctx.lineTo(-22,2+Math.sin(this.x*.01)*1.5);ctx.stroke();
+    // Banner
+    const bx=-22,by=2+Math.sin(this.x*.01)*1.5;const bw=65,bh=11;
+    const wave=Math.sin(this.x*.015)*.8;
+    ctx.save();ctx.translate(bx,by);
+    // Banner shape (wavy trailing edge)
+    ctx.beginPath();ctx.moveTo(0,-bh/2);ctx.lineTo(-bw,-bh/2+wave);
+    ctx.lineTo(-bw-4,wave);ctx.lineTo(-bw,bh/2+wave);ctx.lineTo(0,bh/2);ctx.closePath();
+    ctx.fillStyle='rgba(255,245,240,.65)';ctx.fill();ctx.strokeStyle='rgba(180,160,140,.3)';ctx.lineWidth=.4;ctx.stroke();
+    // Text
+    ctx.save();if(this.vx<0)ctx.scale(-1,1); // un-mirror text
+    const tx=this.vx>0?-bw/2:bw/2;
+    ctx.fillStyle='rgba(180,60,80,.7)';ctx.font='bold 7px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Tafsut \u2764',tx,wave*.5);
+    ctx.restore();
+    ctx.restore();
+    ctx.restore();}
+}
+
+// ══════════════════════════════════════════
 // GARDEN ORCHESTRATOR
 // ══════════════════════════════════════════
 class Garden{
@@ -1881,7 +1918,7 @@ class Garden{
     this.ufoSystem=new UFO();
     this.snowfall=new Snowfall();
     this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
-    this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();
+    this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
     this.waveTimer=R(3,7);
@@ -1901,7 +1938,7 @@ class Garden{
 
     // Dense initial meadow
     for(let i=0;i<28;i++){
-      const x=R(W*.03,W*.97),y=R(HOR+8,H*.95);
+      let x,y;do{x=R(W*.03,W*.97);y=R(HOR+8,H*.95);}while(this._inPond(x,y));
       const ds=.3+(y-HOR)/(H-HOR)*.9;
       const f=new Flower(x,y,ds*R(.6,1.35));
       const skip=R(2,22);for(let s=0;s<skip/.016;s++)f.update(.016,s*.016);
@@ -1909,6 +1946,7 @@ class Garden{
     }
   }
 
+  _inPond(x,y){return this.pond.contains(x,y);}
   initGrass(){this.grass=[];for(let x=0;x<W;x+=R(5,12)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
@@ -1918,8 +1956,8 @@ class Garden{
     if(this.ambientTimer>=this.ambientInterval&&this.flowers.length<this.maxFlowers){
       this.ambientTimer=0;this.ambientInterval=R(1.2,3);
       const x=R(W*.05,W*.95),y=R(HOR+10,H*.92);
-      const ds=.3+(y-HOR)/(H-HOR)*.9;
-      this.flowers.push(new Flower(x,y,ds*R(.65,1.3)));
+      if(!this._inPond(x,y)){const ds=.3+(y-HOR)/(H-HOR)*.9;
+      this.flowers.push(new Flower(x,y,ds*R(.65,1.3)));}
     }
     // Normal waves
     this.waveTimer-=dt;
@@ -1966,7 +2004,7 @@ class Garden{
     this.ufoSystem.update(dt,this.time);
     this.snowfall.update(dt,this.time);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
-    this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);
+    this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
   }
 
   draw(){
@@ -1992,6 +2030,7 @@ class Garden{
     this.hotAirBalloon.draw(this.time);
     this.ufoSystem.draw(this.time);
     this.birdFlock.draw();
+    this.bannerPlane.draw();
     this.distantTrain.draw();
 
     // GROUND
@@ -2089,9 +2128,9 @@ window.addEventListener('resize',()=>{resize();garden.initGrass();garden._skyGra
 let mouseX=-100,mouseY=-100;
 canvas.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;});
 canvas.addEventListener('mouseleave',()=>{mouseX=-100;mouseY=-100;});
-canvas.addEventListener('click',e=>{const x=e.clientX,y=e.clientY;if(y>HOR+10){const ds=.3+(y-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(x,y,ds*R(.65,1.3)));}});
+canvas.addEventListener('click',e=>{const x=e.clientX,y=e.clientY;if(y>HOR+10&&!garden._inPond(x,y)){const ds=.3+(y-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(x,y,ds*R(.65,1.3)));}});
 canvas.addEventListener('touchstart',e=>{const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;},{passive:true});
 canvas.addEventListener('touchmove',e=>{const t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;},{passive:true});
-canvas.addEventListener('touchend',e=>{if(mouseY>HOR+10){const ds=.3+(mouseY-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(mouseX,mouseY,ds*R(.65,1.3)));}mouseX=-100;mouseY=-100;},{passive:true});
+canvas.addEventListener('touchend',e=>{if(mouseY>HOR+10&&!garden._inPond(mouseX,mouseY)){const ds=.3+(mouseY-HOR)/(H-HOR)*.9;garden.flowers.push(new Flower(mouseX,mouseY,ds*R(.65,1.3)));}mouseX=-100;mouseY=-100;},{passive:true});
 // ── AUTO-RELOAD ON DEPLOY ──
 (function(){let h;function djb2(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return h;}const base=location.href.split('?')[0].replace(/\/[^\/]*$/,'/');setInterval(async()=>{try{const r=await fetch(base+'script.js?_='+Date.now(),{cache:'no-store'});const t=await r.text();const nh=djb2(t);if(h===undefined)h=nh;else if(nh!==h)location.reload();}catch(e){}},60000);})();
