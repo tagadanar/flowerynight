@@ -807,11 +807,11 @@ class MeteorImpact{
 class DeathStar{
   constructor(){this.phase='idle';this.timer=R(420,600);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];this.fires=[];}
   update(dt,time,garden){
-    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(420,600);this.x=W+80;this.y=HOR*.18;this.size=2;this.embers=[];this.fires=[];this._ashPatches=null;}return;}
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(420,600);this.x=-80;this.y=HOR*.18;this.size=2;this.embers=[];this.fires=[];this._ashPatches=null;}return;}
     this.time+=dt;
     if(this.phase==='enter'){
       this.size=2+ease.out(Math.min(this.time/12,1))*80;
-      this.x=W+80-this.time*12;this.y=HOR*.18+Math.sin(this.time*.15)*8;
+      this.x=-80+this.time*12;this.y=HOR*.18+Math.sin(this.time*.15)*8;
       if(this.time>12){this.phase='charge';this.time=0;}
     }else if(this.phase==='charge'){
       if(this.time>5){this.phase='fire';this.time=0;this.shake=15;}
