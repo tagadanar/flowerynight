@@ -140,6 +140,8 @@ class Pond{
     this.reeds=[];for(let i=0;i<RI(14,26);i++){const side=R(0,6.28);const edge=R(.85,1.1);this.reeds.push({ox:Math.cos(side)*this.w*.5*edge,oy:Math.sin(side)*this.h*.45*edge,h:R(22,50),w:R(1.5,3),seed:R(0,1000),hasTop:Math.random()>.4});}
     // Fish
     this.fish=[];for(let i=0;i<RI(2,5);i++)this.fish.push({ox:R(-.3,.3)*this.w,oy:R(-.2,.2)*this.h,speed:R(5,15),dir:Math.random()>.5?1:-1,size:R(2,4),seed:R(0,1000),jumpTimer:R(8,25),jumping:false,jumpY:0,jumpVy:0});
+    // Nessie
+    this.nessie={active:false,timer:R(30,90),time:0,duration:0,dir:1,phase:'idle'};
   }
   contains(x,y){const dx=(x-this.x)/this.rw,dy=(y-this.y)/this.rh;return dx*dx+dy*dy<1.15;}
   update(dt,time){
@@ -153,6 +155,12 @@ class Pond{
       if(f.jumping){f.jumpVy+=80*dt;f.jumpY+=f.jumpVy*dt;if(f.jumpY>=0){f.jumpY=0;f.jumping=false;f.jumpTimer=R(10,30);this.ripples.push({x:this.x+f.ox,y:this.y+f.oy,r:0,a:1});}}
       else if(f.jumpTimer<=0){f.jumping=true;f.jumpVy=R(-50,-30);this.ripples.push({x:this.x+f.ox,y:this.y+f.oy,r:0,a:.7});}
     }
+    // Nessie
+    const n=this.nessie;
+    if(!n.active){n.timer-=dt;if(n.timer<=0){n.active=true;n.timer=R(45,120);n.time=0;n.duration=R(5,9);n.dir=Math.random()>.5?1:-1;
+      for(let i=0;i<3;i++)this.ripples.push({x:this.x+n.dir*this.rw*.3+R(-10,10),y:this.y+R(-5,5),r:0,a:.8});}}
+    else{n.time+=dt;if(n.time>=n.duration){n.active=false;
+      for(let i=0;i<3;i++)this.ripples.push({x:this.x+n.dir*this.rw*.2+R(-10,10),y:this.y+R(-5,5),r:0,a:.6});}}
   }
   draw(time,moon){
     const cx=this.x,cy=this.y,rw=this.w*.55,rh=this.h*.55;
@@ -226,6 +234,27 @@ class Pond{
       // Tail
       ctx.beginPath();ctx.moveTo(-f.size,0);ctx.lineTo(-f.size*1.5,-f.size*.3);ctx.lineTo(-f.size*1.5,f.size*.3);ctx.closePath();ctx.fill();
       ctx.restore();
+    }
+    // Nessie
+    if(this.nessie.active){const n=this.nessie;const nt=n.time/n.duration;
+      let rise;if(nt<.2)rise=ease.out(nt/.2);else if(nt>.75)rise=1-ease.in((nt-.75)/.25);else rise=1;
+      const nx=cx+n.dir*rw*.15,ny=cy;const ns=Math.min(rw*.08,12);
+      // Humps (2-3 arcs breaking the water)
+      ctx.fillStyle='rgba(45,55,50,.6)';
+      for(let i=0;i<3;i++){const hx=nx-n.dir*(i*ns*2.5),hy=ny-rise*ns*(.8-i*.15)+Math.sin(time*1.5+i)*1.5;
+        const hs=ns*(.7-i*.12);ctx.beginPath();ctx.ellipse(hx,hy,hs*1.2,hs*.6,0,Math.PI,0);ctx.fill();}
+      // Neck + head
+      const headX=nx+n.dir*ns*2,neckH=rise*ns*2;
+      ctx.strokeStyle='rgba(45,55,50,.65)';ctx.lineWidth=ns*.35;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(nx,ny-rise*ns*.6);
+      ctx.quadraticCurveTo(headX*.5+nx*.5,ny-neckH*1.1,headX,ny-neckH);ctx.stroke();
+      // Head
+      ctx.fillStyle='rgba(45,55,50,.7)';ctx.beginPath();ctx.ellipse(headX,ny-neckH,ns*.5,ns*.3,.2*n.dir,0,6.28);ctx.fill();
+      // Eye
+      ctx.fillStyle='rgba(20,20,15,.6)';ctx.beginPath();ctx.arc(headX+n.dir*ns*.25,ny-neckH-ns*.1,ns*.07,0,6.28);ctx.fill();
+      // Wake ripples behind
+      ctx.strokeStyle=`rgba(180,200,220,${rise*.12})`;ctx.lineWidth=.5;
+      for(let i=0;i<2;i++){const wr=rise*(8+i*6);ctx.beginPath();ctx.ellipse(nx-n.dir*ns*(1+i),ny,wr,wr*.3,0,0,6.28);ctx.stroke();}
     }
     // Lily pads
     for(const l of this.lilies){
