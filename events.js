@@ -949,59 +949,112 @@ class Dragon{
   constructor(){this.active=false;this.timer=R(480,900);this.x=0;this.y=0;this.vx=0;this.wingP=0;this.fire=[];this.embers=[];this.breathTimer=0;this.breathing=false;this.lifetime=0;}
   update(dt,time,garden){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(480,900);
-      const fl=Math.random()>.5;this.x=fl?-120:W+120;this.y=R(HOR*.2,HOR*.6);
-      this.vx=(fl?1:-1)*R(35,60);this.wingP=0;this.fire=[];this.embers=[];
-      this.breathTimer=R(2,4);this.breathing=false;this.lifetime=R(12,20);}return;}
-    this.wingP+=dt*3;this.x+=this.vx*dt;this.y+=Math.sin(time*.4)*8*dt;this.lifetime-=dt;
+      const fl=Math.random()>.5;this.x=fl?-180:W+180;this.y=R(HOR*.15,HOR*.5);
+      this.vx=(fl?1:-1)*R(30,50);this.wingP=0;this.fire=[];this.embers=[];
+      this.breathTimer=R(1.5,3);this.breathing=false;this.lifetime=R(14,22);}return;}
+    this.wingP+=dt*2.8;this.x+=this.vx*dt;this.y+=Math.sin(time*.35)*10*dt;this.lifetime-=dt;
     this.breathTimer-=dt;
-    if(!this.breathing&&this.breathTimer<=0){this.breathing=true;this.breathTimer=R(1.5,3);}
+    if(!this.breathing&&this.breathTimer<=0){this.breathing=true;this.breathTimer=R(2,4);}
     else if(this.breathing){
       this.breathTimer-=dt;
-      const fx=this.x+(this.vx>0?1:-1)*40,fy=this.y+15;
-      for(let i=0;i<3;i++)this.fire.push({x:fx+R(-5,5),y:fy+R(-3,3),vx:(this.vx>0?1:-1)*R(40,100)+R(-10,10),vy:R(15,40),life:R(.5,1.5),size:R(3,8),hue:pick([10,20,30,40,50])});
-      if(this.breathTimer<=0){this.breathing=false;this.breathTimer=R(3,6);}
-      for(const f of this.fire){if(f.life>.8)garden.flowers=garden.flowers.filter(fl=>{const dx=fl.x-f.x,dy=fl.y-f.y;return dx*dx+dy*dy>30*30;});}
+      const dir=this.vx>0?1:-1;const fx=this.x+dir*60,fy=this.y+20;
+      // Dense fire stream
+      for(let i=0;i<6;i++)this.fire.push({x:fx+R(-8,8),y:fy+R(-5,5),vx:dir*R(60,160)+R(-15,15),vy:R(20,60),life:R(.6,2),size:R(5,14),hue:pick([5,15,25,35,45])});
+      if(this.breathTimer<=0){this.breathing=false;this.breathTimer=R(2,5);}
+      // Burn flowers in fire path
+      for(const f of this.fire){if(f.life>1)garden.flowers=garden.flowers.filter(fl=>{const dx=fl.x-f.x,dy=fl.y-f.y;return dx*dx+dy*dy>40*40;});}
     }
-    for(const f of this.fire){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=20*dt;f.life-=dt;f.size*=.98;
-      if(f.life<.3&&Math.random()<dt*5)this.embers.push({x:f.x,y:f.y,vx:R(-5,5),vy:R(-15,-5),life:R(.5,1.5),size:R(.5,2)});}
+    for(const f of this.fire){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=25*dt;f.life-=dt;f.size*=.97;
+      if(f.life<.4&&Math.random()<dt*8)this.embers.push({x:f.x,y:f.y,vx:R(-8,8),vy:R(-20,-5),life:R(.5,2),size:R(1,3)});}
     this.fire=this.fire.filter(f=>f.life>0);
     for(const e of this.embers){e.x+=e.vx*dt;e.y+=e.vy*dt;e.life-=dt;}
     this.embers=this.embers.filter(e=>e.life>0);
-    if(this.lifetime<=0||this.x<-150||this.x>W+150){this.active=false;this.fire=[];this.embers=[];}
+    if(this.lifetime<=0||this.x<-200||this.x>W+200){this.active=false;this.fire=[];this.embers=[];}
   }
   draw(time){
     if(!this.active)return;
-    // Fire particles
+    // Fire particles — big and bright
     for(const f of this.fire){const a=cl(f.life/.8,0,1);
-      ctx.beginPath();ctx.arc(f.x,f.y,f.size*a,0,6.28);ctx.fillStyle=hsl(f.hue,90,55,a*.7);ctx.fill();
-      ctx.beginPath();ctx.arc(f.x,f.y,f.size*1.8,0,6.28);ctx.fillStyle=hsl(f.hue,70,50,a*.1);ctx.fill();}
-    for(const e of this.embers){const a=cl(e.life/.5,0,1);ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,6.28);ctx.fillStyle=hsl(30,80,60,a*.6);ctx.fill();}
-    // Dragon
-    const s=18,wing=Math.sin(this.wingP)*.5;
+      // Outer glow
+      ctx.beginPath();ctx.arc(f.x,f.y,f.size*2.5*a,0,6.28);ctx.fillStyle=hsl(f.hue,80,50,a*.08);ctx.fill();
+      // Fire body
+      ctx.beginPath();ctx.arc(f.x,f.y,f.size*a,0,6.28);ctx.fillStyle=hsl(f.hue,95,58,a*.75);ctx.fill();
+      // Bright core
+      if(f.size>8){ctx.beginPath();ctx.arc(f.x,f.y,f.size*.4*a,0,6.28);ctx.fillStyle=hsl(f.hue+10,80,80,a*.5);ctx.fill();}}
+    // Embers
+    for(const e of this.embers){const a=cl(e.life/.5,0,1);ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,6.28);ctx.fillStyle=hsl(25,85,60,a*.7);ctx.fill();}
+    // Dragon — much bigger (s=32) and visible against dark sky
+    const s=32,wing=Math.sin(this.wingP)*.5;
     ctx.save();ctx.translate(this.x,this.y);if(this.vx<0)ctx.scale(-1,1);
-    ctx.fillStyle='rgba(25,20,30,.85)';ctx.strokeStyle='rgba(25,20,30,.85)';
-    ctx.beginPath();ctx.ellipse(0,0,s*1.2,s*.35,0,0,6.28);ctx.fill();
-    ctx.lineWidth=s*.25;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(s*.8,-s*.1);ctx.quadraticCurveTo(s*1.4,-s*.5,s*1.8,-s*.3);ctx.stroke();
-    ctx.beginPath();ctx.ellipse(s*1.8,-s*.3,s*.3,s*.2,.3,0,6.28);ctx.fill();
-    if(this.breathing){ctx.lineWidth=s*.12;ctx.beginPath();ctx.moveTo(s*2,-s*.2);ctx.lineTo(s*2.3,-s*.05);ctx.stroke();ctx.beginPath();ctx.moveTo(s*2,-s*.35);ctx.lineTo(s*2.2,-s*.4);ctx.stroke();}
-    ctx.fillStyle='rgba(255,180,30,.7)';ctx.beginPath();ctx.arc(s*1.9,-s*.35,s*.06,0,6.28);ctx.fill();
-    ctx.fillStyle='rgba(25,20,30,.85)';
-    ctx.beginPath();ctx.moveTo(s*1.7,-s*.4);ctx.lineTo(s*1.6,-s*.7);ctx.lineTo(s*1.75,-s*.45);ctx.fill();
-    ctx.beginPath();ctx.moveTo(s*1.85,-s*.45);ctx.lineTo(s*1.8,-s*.72);ctx.lineTo(s*1.9,-s*.48);ctx.fill();
-    // Wings
-    ctx.fillStyle='rgba(30,25,35,.7)';const wUp=wing*s*.8;
-    ctx.beginPath();ctx.moveTo(-s*.2,-s*.3);ctx.bezierCurveTo(-s*.1,-s*1-wUp,-s*.8,-s*1.5-wUp,-s*1.2,-s*1.2-wUp);
-    ctx.bezierCurveTo(-s*1.5,-s*1-wUp,-s*1.6,-s*.5-wUp*.3,-s*1.3,s*.1);ctx.bezierCurveTo(-s*.8,-s*.1,-s*.4,-s*.2,-s*.2,-s*.3);ctx.fill();
-    ctx.strokeStyle='rgba(40,35,45,.3)';ctx.lineWidth=.5;ctx.beginPath();
-    ctx.moveTo(-s*.3,-s*.3);ctx.lineTo(-s*1,-s*1.2-wUp);ctx.moveTo(-s*.5,-s*.2);ctx.lineTo(-s*1.3,-s*.8-wUp);
-    ctx.moveTo(-s*.7,-s*.1);ctx.lineTo(-s*1.4,-s*.4-wUp*.3);ctx.stroke();
-    // Tail
-    ctx.strokeStyle='rgba(25,20,30,.85)';ctx.lineWidth=s*.15;ctx.lineCap='round';const tw=Math.sin(time*2)*.15;
-    ctx.beginPath();ctx.moveTo(-s*1,-s*.05);ctx.bezierCurveTo(-s*1.5,s*.1+tw*s,-s*2,-s*.1+tw*s,-s*2.3,s*.05+tw*s);ctx.stroke();
-    ctx.fillStyle='rgba(25,20,30,.85)';ctx.beginPath();ctx.moveTo(-s*2.3,s*.05+tw*s);ctx.lineTo(-s*2.6,-s*.15+tw*s);ctx.lineTo(-s*2.5,s*.2+tw*s);ctx.fill();
-    ctx.lineWidth=s*.08;ctx.beginPath();ctx.moveTo(s*.3,s*.3);ctx.lineTo(s*.4,s*.6);ctx.moveTo(-s*.3,s*.3);ctx.lineTo(-s*.2,s*.55);ctx.stroke();
-    ctx.fillStyle='rgba(35,30,40,.7)';for(let i=0;i<5;i++){const sx2=s*.6-i*s*.35,spH=s*(.15+Math.sin(i+1)*.05);
-      ctx.beginPath();ctx.moveTo(sx2,-s*.3);ctx.lineTo(sx2-s*.05,-s*.3-spH);ctx.lineTo(sx2+s*.05,-s*.3);ctx.fill();}
+    // Subtle glow around dragon
+    ctx.beginPath();ctx.ellipse(0,-s*.2,s*2.5,s*1.5,0,0,6.28);ctx.fillStyle='rgba(60,40,70,.08)';ctx.fill();
+    // Body
+    const bodyCol='rgba(75,55,85,.9)';const bodyCol2='rgba(90,65,95,.8)';
+    ctx.fillStyle=bodyCol;ctx.strokeStyle=bodyCol;
+    ctx.beginPath();ctx.ellipse(0,0,s*1.2,s*.4,0,0,6.28);ctx.fill();
+    // Belly highlight
+    ctx.fillStyle='rgba(80,55,70,.3)';ctx.beginPath();ctx.ellipse(0,s*.15,s*.8,s*.15,0,0,6.28);ctx.fill();
+    // Neck + head
+    ctx.fillStyle=bodyCol;ctx.lineWidth=s*.3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(s*.9,-s*.15);ctx.quadraticCurveTo(s*1.5,-s*.6,s*1.9,-s*.35);ctx.stroke();
+    // Head
+    ctx.beginPath();ctx.ellipse(s*1.9,-s*.35,s*.35,s*.25,.3,0,6.28);ctx.fill();
+    // Snout
+    ctx.beginPath();ctx.ellipse(s*2.15,-s*.3,s*.18,s*.12,.2,0,6.28);ctx.fillStyle=bodyCol2;ctx.fill();
+    // Nostrils (smoke when breathing)
+    if(this.breathing){
+      ctx.fillStyle='rgba(255,150,30,.4)';ctx.beginPath();ctx.arc(s*2.3,-s*.25,s*.06,0,6.28);ctx.arc(s*2.3,-s*.35,s*.06,0,6.28);ctx.fill();
+      // Mouth fire glow
+      const fg=ctx.createRadialGradient(s*2.3,-s*.2,0,s*2.3,-s*.2,s*.5);
+      fg.addColorStop(0,'rgba(255,180,50,.25)');fg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(s*2.3,-s*.2,s*.5,0,6.28);ctx.fillStyle=fg;ctx.fill();
+      // Open jaw
+      ctx.fillStyle=bodyCol;ctx.lineWidth=s*.1;ctx.beginPath();ctx.moveTo(s*2.1,-s*.18);ctx.lineTo(s*2.4,-s*.08);ctx.stroke();
+    }
+    // Eye — glowing
+    ctx.fillStyle='rgba(255,200,30,.85)';ctx.beginPath();ctx.ellipse(s*1.95,-s*.42,s*.08,s*.06,.2,0,6.28);ctx.fill();
+    ctx.fillStyle='rgba(180,50,10,.9)';ctx.beginPath();ctx.ellipse(s*1.95,-s*.42,s*.03,s*.06,.2,0,6.28);ctx.fill();
+    // Horns
+    ctx.fillStyle='rgba(70,50,40,.8)';
+    ctx.beginPath();ctx.moveTo(s*1.75,-s*.5);ctx.lineTo(s*1.6,-s*.9);ctx.lineTo(s*1.8,-s*.55);ctx.fill();
+    ctx.beginPath();ctx.moveTo(s*1.9,-s*.55);ctx.lineTo(s*1.82,-s*.95);ctx.lineTo(s*1.95,-s*.58);ctx.fill();
+    // Wings — large, dramatic
+    ctx.fillStyle='rgba(70,50,80,.75)';const wUp=wing*s*.9;
+    // Main wing
+    ctx.beginPath();ctx.moveTo(-s*.2,-s*.35);
+    ctx.bezierCurveTo(-s*.1,-s*1.2-wUp,-s*.9,-s*1.8-wUp,-s*1.4,-s*1.4-wUp);
+    ctx.bezierCurveTo(-s*1.8,-s*1.2-wUp,-s*2,-s*.6-wUp*.3,-s*1.6,s*.15);
+    ctx.bezierCurveTo(-s*1,-s*.05,-s*.5,-s*.2,-s*.2,-s*.35);ctx.fill();
+    // Wing finger bones
+    ctx.strokeStyle='rgba(70,50,80,.35)';ctx.lineWidth=.8;ctx.beginPath();
+    ctx.moveTo(-s*.3,-s*.35);ctx.lineTo(-s*1.2,-s*1.5-wUp);
+    ctx.moveTo(-s*.6,-s*.2);ctx.lineTo(-s*1.6,-s*1-wUp);
+    ctx.moveTo(-s*.9,-s*.05);ctx.lineTo(-s*1.8,-s*.5-wUp*.3);ctx.stroke();
+    // Wing membrane texture
+    ctx.strokeStyle='rgba(45,30,55,.15)';ctx.lineWidth=.4;ctx.beginPath();
+    for(let i=0;i<4;i++){const t=.2+i*.2;ctx.moveTo(-s*(.2+t),-s*(.35+t*.6)-wUp*t);
+      ctx.quadraticCurveTo(-s*(1+t*.3),-s*(.3+t*.4)-wUp*t*.5,-s*(1.2+t*.3),s*.1-t*s*.1);}ctx.stroke();
+    // Tail — long and sinuous
+    ctx.strokeStyle=bodyCol;ctx.lineWidth=s*.18;ctx.lineCap='round';const tw=Math.sin(time*1.8)*.18;
+    ctx.beginPath();ctx.moveTo(-s*1.1,0);
+    ctx.bezierCurveTo(-s*1.6,s*.15+tw*s,-s*2.2,-s*.15+tw*s,-s*2.8,s*.05+tw*s);
+    ctx.bezierCurveTo(-s*3.1,s*.15+tw*s*1.2,-s*3.3,-s*.1+tw*s*.8,-s*3.5,tw*s*.5);ctx.stroke();
+    // Tail spade
+    ctx.fillStyle=bodyCol;ctx.beginPath();
+    ctx.moveTo(-s*3.5,tw*s*.5);ctx.lineTo(-s*3.8,-s*.2+tw*s*.5);ctx.lineTo(-s*3.7,s*.25+tw*s*.5);ctx.fill();
+    // Legs (tucked during flight)
+    ctx.lineWidth=s*.1;ctx.beginPath();ctx.moveTo(s*.4,s*.35);ctx.lineTo(s*.5,s*.7);ctx.lineTo(s*.6,s*.6);
+    ctx.moveTo(-s*.3,s*.35);ctx.lineTo(-s*.2,s*.65);ctx.lineTo(-s*.1,s*.55);ctx.stroke();
+    // Claws
+    ctx.lineWidth=s*.04;ctx.beginPath();ctx.moveTo(s*.6,s*.6);ctx.lineTo(s*.65,s*.7);ctx.moveTo(s*.55,s*.65);ctx.lineTo(s*.6,s*.75);ctx.stroke();
+    // Dorsal spines
+    ctx.fillStyle='rgba(65,45,75,.75)';
+    for(let i=0;i<7;i++){const sx2=s*.7-i*s*.35,spH=s*(.18+Math.sin(i+.5)*.06);
+      ctx.beginPath();ctx.moveTo(sx2,-s*.35);ctx.lineTo(sx2-s*.04,-s*.35-spH);ctx.lineTo(sx2+s*.04,-s*.35);ctx.fill();}
+    // Scales hint on body
+    ctx.fillStyle='rgba(70,50,80,.1)';
+    for(let i=0;i<6;i++){const scx=s*(.8-i*.3),scy=-s*.05+Math.sin(i)*.05*s;
+      ctx.beginPath();ctx.ellipse(scx,scy,s*.12,s*.08,0,0,6.28);ctx.fill();}
     ctx.restore();
   }
 }
