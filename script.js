@@ -231,10 +231,11 @@ class Moon{
 // SKY: MOON BIKER
 // ══════════════════════════════════════════
 class MoonBiker{
-  constructor(){this.active=false;this.timer=R(900,1200);this.elapsed=0;this.duration=5;this.mx=0;this.my=0;this.ms=0;this.dir=1;}
+  constructor(){this.active=false;this.cooldown=R(20,40);this.elapsed=0;this.duration=5;this.mx=0;this.my=0;this.ms=0;this.dir=1;this._lastPhase=-1;}
   update(dt,moon){
-    if(this.active){this.elapsed+=dt;this.mx=moon.x;this.my=moon.y;if(this.elapsed>=this.duration){this.active=false;this.timer=R(900,1200);}return;}
-    this.timer-=dt;if(this.timer<=0){if(moon.active&&moon.opacity>.5&&Math.abs(Math.cos(moon.phase*6.28))>.6){this.active=true;this.elapsed=0;this.mx=moon.x;this.my=moon.y;this.ms=moon.size;this.dir=Math.random()>.5?1:-1;}else this.timer=R(40,80);}
+    if(this.active){this.elapsed+=dt;this.mx=moon.x;this.my=moon.y;if(this.elapsed>=this.duration){this.active=false;this.cooldown=R(15,30);}return;}
+    this.cooldown-=dt;if(this.cooldown>0)return;
+    if(moon.active&&moon.opacity>.5&&Math.abs(Math.cos(moon.phase*6.28))>.55){this.active=true;this.elapsed=0;this.mx=moon.x;this.my=moon.y;this.ms=moon.size;this.dir=Math.random()>.5?1:-1;}
   }
   draw(){
     if(!this.active)return;const t=this.elapsed/this.duration,r=this.ms,s=r*.038;
@@ -1551,12 +1552,12 @@ class GlowMushrooms{
 // ══════════════════════════════════════════
 class Pond{
   constructor(){
-    this.x=R(W*.25,W*.75);this.y=R(HOR+70,H*.83);this.w=R(160,260);this.h=R(55,90);
+    this.x=R(W*.25,W*.7);this.y=R(HOR+75,H*.82);this.w=R(220,340);this.h=R(70,110);
     this.ripples=[];this.rt=R(1,4);this.rw=this.w*.55;this.rh=this.h*.55;
     // Lily pads
-    this.lilies=[];for(let i=0;i<RI(5,12);i++){const a=R(0,6.28),d=R(.2,.85);this.lilies.push({ox:Math.cos(a)*this.w*.4*d,oy:Math.sin(a)*this.h*.35*d,size:R(6,13),rot:R(0,6.28),hasFlower:Math.random()>.55,flowerHue:pick([340,350,45,300,320]),bobPhase:R(0,6.28),bobSpeed:R(.5,1.2)});}
+    this.lilies=[];for(let i=0;i<RI(7,16);i++){const a=R(0,6.28),d=R(.15,.85);this.lilies.push({ox:Math.cos(a)*this.w*.4*d,oy:Math.sin(a)*this.h*.35*d,size:R(7,15),rot:R(0,6.28),hasFlower:Math.random()>.55,flowerHue:pick([340,350,45,300,320]),bobPhase:R(0,6.28),bobSpeed:R(.5,1.2)});}
     // Reeds around edge
-    this.reeds=[];for(let i=0;i<RI(10,20);i++){const side=R(0,6.28);const edge=R(.85,1.1);this.reeds.push({ox:Math.cos(side)*this.w*.5*edge,oy:Math.sin(side)*this.h*.45*edge,h:R(18,42),w:R(1,2.5),seed:R(0,1000),hasTop:Math.random()>.4});}
+    this.reeds=[];for(let i=0;i<RI(14,26);i++){const side=R(0,6.28);const edge=R(.85,1.1);this.reeds.push({ox:Math.cos(side)*this.w*.5*edge,oy:Math.sin(side)*this.h*.45*edge,h:R(22,50),w:R(1.5,3),seed:R(0,1000),hasTop:Math.random()>.4});}
     // Fish
     this.fish=[];for(let i=0;i<RI(2,5);i++)this.fish.push({ox:R(-.3,.3)*this.w,oy:R(-.2,.2)*this.h,speed:R(5,15),dir:Math.random()>.5?1:-1,size:R(2,4),seed:R(0,1000),jumpTimer:R(8,25),jumping:false,jumpY:0,jumpVy:0});
   }
@@ -1719,7 +1720,7 @@ class CloverPatch{
 // ══════════════════════════════════════════
 class FallenLog{
   constructor(){
-    this.x=R(W*.15,W*.85);this.y=R(HOR+45,H*.85);this.w=R(80,130);this.rot=R(-.08,.08);this.th=R(7,12);
+    this.x=R(W*.15,W*.7);this.y=R(HOR+45,H*.85);this.w=R(130,200);this.rot=R(-.06,.06);this.th=R(10,16);
     this.bark=[];for(let i=0;i<RI(6,10);i++)this.bark.push({ox:R(-this.w*.45,this.w*.45),w:R(1,3)});
     this.moss=[];for(let i=0;i<RI(4,8);i++)this.moss.push({ox:R(-this.w*.4,this.w*.35),sz:R(3,7),szh:R(2,4),r:R(-.3,.3),hue:R(90,140)});
     this.shrooms=[];for(let i=0;i<RI(0,4);i++)this.shrooms.push({ox:R(-this.w*.35,this.w*.35),sz:R(2,4),hue:pick([30,35,350,40])});
@@ -1880,6 +1881,85 @@ class BannerPlane{
 }
 
 // ══════════════════════════════════════════
+// GROUND: BACKGROUND TREES
+// ══════════════════════════════════════════
+class BackgroundTrees{
+  constructor(){this.trees=[];for(let i=0;i<RI(2,4);i++){const x=R(W*.05,W*.7);const y=groundY(x)-R(5,15);this.trees.push({x,y,h:R(60,120),tw:R(3,7),cw:R(25,50),ch:R(18,35),hue:R(100,130),lit:R(14,24)});}}
+  draw(){for(const t of this.trees){ctx.strokeStyle='rgba(35,28,15,.35)';ctx.lineWidth=t.tw;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.x+R(-.5,.5),t.y-t.h);ctx.stroke();ctx.beginPath();ctx.ellipse(t.x,t.y-t.h*.85,t.cw,t.ch,0,0,6.28);ctx.fillStyle=hsl(t.hue,22,t.lit,.4);ctx.fill();}}
+}
+
+// ══════════════════════════════════════════
+// GROUND: BIG TREE
+// ══════════════════════════════════════════
+class BigTree{
+  constructor(){
+    this.x=W*R(.8,.92);this.baseY=groundY(this.x);
+    const h=H*R(.4,.5);this.h=h;this.tw=R(18,26);
+    this.branches=[];
+    for(let i=0;i<RI(4,7);i++){const st=R(.35,.75);const ang=(i%2===0?-1:1)*R(.2,.85)+R(-.1,.1);const len=h*R(.2,.4);const sy=this.baseY-h*st;
+      this.branches.push({sx:this.x,sy,ex:this.x+Math.sin(ang)*len,ey:sy-Math.cos(ang)*len*.6,w:R(2,6)*(1-st*.4),crv:R(-15,15)});
+      if(Math.random()>.35){const t=R(.5,.8);const bx=this.x+(Math.sin(ang)*len)*t;const by=sy+(-Math.cos(ang)*len*.6-0)*t;const sa=ang+R(-.5,.5);const sl=len*R(.3,.5);
+      this.branches.push({sx:bx,sy:by,ex:bx+Math.sin(sa)*sl,ey:by-Math.cos(sa)*sl*.6,w:R(1,3),crv:R(-8,8)});}}
+    this.ccx=this.x-this.tw*.3;this.ccy=this.baseY-h*.72;
+    this.canopy=[];const cw=h*.5,ch=h*.35;
+    for(let i=0;i<RI(18,26);i++){const a=R(0,6.28),d=R(.1,1);this.canopy.push({ox:Math.cos(a)*cw*d,oy:Math.sin(a)*ch*d-ch*.2,size:R(22,48),hue:R(95,140),sat:R(18,42),lit:R(14,28),seed:R(0,1000),a:R(.45,.75),rot:R(-.15,.15)});}
+    this.canopy.sort((a,b)=>(a.oy+a.size)-(b.oy+b.size));
+    this.roots=[];for(let i=0;i<RI(3,6);i++){const side=(i%2===0?-1:1);this.roots.push({dx:side*R(5,this.tw*1.8),len:R(15,40),w:R(2,5),crv:R(-5,5)});}
+    this.bark=[];for(let i=0;i<RI(8,14);i++)this.bark.push({y:R(.05,.9),x:R(-.4,.4),w:R(.5,2)});
+    this.knots=[];for(let i=0;i<RI(1,3);i++)this.knots.push({y:R(.2,.7),x:R(-.2,.2),s:R(2,4)});
+    this.leaves=[];this.lt=R(1,4);
+    this._oc=null;
+  }
+  _cacheTrunk(){
+    const tw=this.tw,h=this.h,bx=this.x,by=this.baseY;
+    const allX=[bx-tw,...this.branches.map(b=>b.ex),...this.roots.map(r=>bx+r.dx)];
+    const allY=[by,...this.branches.map(b=>b.ey)];
+    const pad=30;const x0=Math.min(...allX)-pad,y0=Math.min(...allY)-pad;
+    const cw=Math.max(...allX)+pad-x0,ch=by+pad-y0;
+    const d=Math.min(window.devicePixelRatio||1,2);
+    this._oc=document.createElement('canvas');this._oc.width=Math.ceil(cw*d);this._oc.height=Math.ceil(ch*d);
+    const c=this._oc.getContext('2d');c.setTransform(d,0,0,d,0,0);c.translate(-x0,-y0);
+    // Shadow
+    c.fillStyle='rgba(10,8,5,.12)';c.beginPath();c.ellipse(bx+8,by,tw*1.5,6,0,0,6.28);c.fill();
+    // Trunk
+    c.beginPath();c.moveTo(bx-tw*.6,by);c.quadraticCurveTo(bx-tw*.55,by-h*.3,bx-tw*.25,by-h*.85);
+    c.lineTo(bx+tw*.2,by-h*.85);c.quadraticCurveTo(bx+tw*.5,by-h*.3,bx+tw*.55,by);c.closePath();
+    const tg=c.createLinearGradient(bx-tw,0,bx+tw,0);
+    tg.addColorStop(0,'#3a2a15');tg.addColorStop(.3,'#5a4025');tg.addColorStop(.5,'#6a4a2a');tg.addColorStop(.7,'#5a3e22');tg.addColorStop(1,'#3a2810');
+    c.fillStyle=tg;c.fill();c.strokeStyle='rgba(30,20,10,.2)';c.lineWidth=.6;c.stroke();
+    // Bark
+    c.strokeStyle='rgba(25,18,8,.18)';c.lineWidth=.4;c.beginPath();
+    for(const b of this.bark){const bky=by-h*b.y;c.moveTo(bx+tw*b.x-b.w,bky-4);c.lineTo(bx+tw*b.x+b.w,bky+4);}c.stroke();
+    for(const k of this.knots){c.beginPath();c.ellipse(bx+tw*k.x,by-h*k.y,k.s,k.s*.7,0,0,6.28);c.strokeStyle='rgba(35,25,12,.2)';c.lineWidth=.5;c.stroke();
+      c.beginPath();c.ellipse(bx+tw*k.x,by-h*k.y,k.s*.4,k.s*.3,0,0,6.28);c.stroke();}
+    // Roots
+    for(const r of this.roots){c.strokeStyle='#4a3520';c.lineWidth=r.w;c.lineCap='round';
+      c.beginPath();c.moveTo(bx+(r.dx>0?tw*.4:-tw*.4),by);c.quadraticCurveTo(bx+r.dx*.6,by+r.crv,bx+r.dx,by+3);c.stroke();}
+    // Branches
+    for(const br of this.branches){c.strokeStyle='#4a3520';c.lineWidth=br.w;c.lineCap='round';
+      c.beginPath();c.moveTo(br.sx,br.sy);c.quadraticCurveTo(br.sx+br.crv,(br.sy+br.ey)/2,br.ex,br.ey);c.stroke();}
+    this._ox=x0;this._oy=y0;this._ow=cw;this._oh=ch;
+  }
+  update(dt,time){
+    this.lt-=dt;if(this.lt<=0){this.lt=R(1.5,5);
+      this.leaves.push({x:this.ccx+R(-this.h*.35,this.h*.3),y:this.ccy+R(-this.h*.15,this.h*.1),vx:R(-8,10),vy:R(5,15),rot:R(0,6.28),rs:R(-2,2),size:R(2,5),life:R(4,10),hue:pick([100,110,120,40,30,35])});}
+    for(const l of this.leaves){l.x+=l.vx*dt+noise.get(l.x*.01,time*.3)*12*dt+gustForce*.4*dt;l.y+=l.vy*dt;l.vy+=3*dt;l.rot+=l.rs*dt;l.life-=dt;}
+    this.leaves=this.leaves.filter(l=>l.life>0&&l.y<H+20);
+  }
+  drawTrunk(){if(!this._oc)this._cacheTrunk();ctx.drawImage(this._oc,this._ox,this._oy,this._ow,this._oh);}
+  drawCanopy(time){
+    for(const c of this.canopy){const sx=noise.get(c.seed+time*.08,0)*4+gustForce*.15;const sy=noise.get(0,c.seed+time*.06)*2;
+      ctx.beginPath();ctx.ellipse(this.ccx+c.ox+sx,this.ccy+c.oy+sy,c.size,c.size*.65,c.rot,0,6.28);ctx.fillStyle=hsl(c.hue,c.sat,c.lit,c.a);ctx.fill();}
+    // Moonlight highlight on top
+    const hg=ctx.createRadialGradient(this.ccx,this.ccy-this.h*.18,0,this.ccx,this.ccy-this.h*.15,this.h*.28);
+    hg.addColorStop(0,'rgba(160,190,140,.035)');hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.arc(this.ccx,this.ccy-this.h*.15,this.h*.28,0,6.28);ctx.fillStyle=hg;ctx.fill();
+    // Falling leaves
+    for(const l of this.leaves){const a=cl(l.life/2,0,1)*.55;ctx.save();ctx.translate(l.x,l.y);ctx.rotate(l.rot);ctx.fillStyle=hsl(l.hue,30,28,a);ctx.beginPath();ctx.ellipse(0,0,l.size*.5,l.size*.25,0,0,6.28);ctx.fill();ctx.restore();}
+  }
+}
+
+// ══════════════════════════════════════════
 // GARDEN ORCHESTRATOR
 // ══════════════════════════════════════════
 class Garden{
@@ -1898,6 +1978,7 @@ class Garden{
     this.diglett=new Diglett();this.fireflies=new Fireflies();this.dandelionBursts=new DandelionBursts();
     this.glowMushrooms=new GlowMushrooms();this.pond=new Pond();this.spiderWeb=new SpiderWeb();
     this.cloverPatch=new CloverPatch();this.fallenLog=new FallenLog();
+    this.bgTrees=new BackgroundTrees();this.bigTree=new BigTree();
 
     // Creatures
     this.owl=new Owl();this.frogSystem=new FrogSystem();this.snailSystem=new SnailSystem();
@@ -1983,7 +2064,7 @@ class Garden{
     for(const b of this.butterflies)b.update(dt,this.time);
     for(const b of this.bees)b.update(dt,this.time);
     this.diglett.update(dt,this.time);this.fireflies.update(dt,this.time);this.dandelionBursts.update(dt,this.time);
-    this.glowMushrooms.update(dt);this.pond.update(dt,this.time);this.spiderWeb.update(dt);this.wormSystem.update(dt);
+    this.glowMushrooms.update(dt);this.pond.update(dt,this.time);this.spiderWeb.update(dt);this.wormSystem.update(dt);this.bigTree.update(dt,this.time);
 
     // Creatures
     this.owl.update(dt);this.frogSystem.update(dt);this.snailSystem.update(dt);
@@ -2035,16 +2116,17 @@ class Garden{
 
     // GROUND
     this.drawHills();
+    this.bgTrees.draw();
+    this.bigTree.drawTrunk();
     this.pond.draw(this.time,this.moon);
     this.fallenLog.draw();
     this.cloverPatch.draw(this.time);
-    for(const g of this.grass){if(g.y>H*.78)g.draw(this.time);}
+    for(const g of this.grass)g.draw(this.time);
     for(const p of this.particles){if(p.type==='pollen')p.draw(this.time);}
     for(const f of this.flowers)f.draw(this.time);
     this.diglett.draw(this.time);
     this.wormSystem.draw();
     this.spiderWeb.draw(this.time);
-    for(const g of this.grass){if(g.y<=H*.78)g.draw(this.time);}
     for(const p of this.particles){if(p.type!=='pollen')p.draw(this.time);}
     this.glowMushrooms.draw(this.time);
     this.dandelionBursts.draw(this.time);
@@ -2056,6 +2138,7 @@ class Garden{
     this.ladybugSystem.draw();
     this.cat.draw();
     this.dragonflySystem.draw(this.time);
+    this.bigTree.drawCanopy(this.time);
     this.fireflies.draw(this.time);
     this.fireflySwarm.draw(this.time);
     this.willOWisp.draw(this.time);
