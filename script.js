@@ -2311,6 +2311,131 @@ class BigTree{
 }
 
 // ══════════════════════════════════════════
+// ULTRA RARE: DEATH STAR (every 20-40 min)
+// ══════════════════════════════════════════
+class DeathStar{
+  constructor(){this.phase='idle';this.timer=R(1200,2400);this.time=0;this.x=0;this.y=0;this.size=0;this.laserY=0;this.ashAlpha=0;this.shake=0;this.embers=[];}
+  update(dt,time,garden){
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='enter';this.time=0;this.timer=R(1200,2400);this.x=W*.8;this.y=HOR*.15;this.size=2;this.embers=[];}return;}
+    this.time+=dt;
+    if(this.phase==='enter'){
+      // Grow from tiny dot to large sphere over 10s
+      this.size=2+ease.out(Math.min(this.time/10,1))*65;
+      this.x=W*.8-this.time*3;this.y=HOR*.15+Math.sin(this.time*.2)*5;
+      if(this.time>10){this.phase='charge';this.time=0;}
+    }else if(this.phase==='charge'){
+      // Dish glows green, pulsing
+      if(this.time>4){this.phase='fire';this.time=0;}
+    }else if(this.phase==='fire'){
+      // Laser shoots down to ground
+      this.laserY=HOR*.3+ease.out(Math.min(this.time/.8,1))*(H-HOR*.3);
+      this.shake=Math.max(0,(1-this.time/2))*6;
+      if(this.time>.5){
+        // Kill all flowers
+        for(const f of garden.flowers){if(f.phase<5){f.phase=5;f.pt=0;f.wiltDur=.5;f.opacity=0;}}
+        garden.flowers=[];
+      }
+      if(this.time>2){this.phase='ash';this.time=0;this.ashAlpha=1;}
+    }else if(this.phase==='ash'){
+      // Scorched ground, embers
+      this.ashAlpha=Math.max(0,1-this.time/12);
+      if(Math.random()<dt*8&&this.embers.length<40){
+        this.embers.push({x:R(0,W),y:R(HOR+10,H),vx:R(-5,5),vy:R(-15,-5),life:R(1,3),size:R(1,3)});
+      }
+      for(const e of this.embers){e.x+=e.vx*dt;e.y+=e.vy*dt;e.life-=dt;}
+      this.embers=this.embers.filter(e=>e.life>0);
+      if(this.time>12){this.phase='leave';this.time=0;}
+    }else if(this.phase==='leave'){
+      this.x+=25*dt;this.size=Math.max(2,this.size-dt*5);
+      if(this.time>8){this.phase='idle';this.embers=[];}
+    }
+  }
+  draw(time){
+    if(this.phase==='idle')return;
+    const sx=this.shake>0?(Math.random()-.5)*this.shake:0;
+    const sy=this.shake>0?(Math.random()-.5)*this.shake:0;
+    if(sx||sy){ctx.save();ctx.translate(sx,sy);}
+    // Ash overlay on ground
+    if(this.ashAlpha>.01){
+      ctx.fillStyle=`rgba(20,18,15,${this.ashAlpha*.6})`;ctx.fillRect(0,HOR,W,H-HOR);
+      // Scorched patches
+      if(!this._ashPatches){this._ashPatches=[];for(let i=0;i<8;i++)this._ashPatches.push({x:W*(.1+i*.11),y:HOR+R(20,80),w:R(30,60),h:R(10,25)});}
+      ctx.fillStyle=`rgba(40,30,20,${this.ashAlpha*.3})`;
+      for(const p of this._ashPatches){ctx.beginPath();ctx.ellipse(p.x,p.y,p.w,p.h,0,0,6.28);ctx.fill();}
+      // Embers
+      for(const e of this.embers){const a=cl(e.life/1,0,1);
+        ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,6.28);ctx.fillStyle=hsl(pick([15,25,35]),80,55,a*.7);ctx.fill();
+        ctx.beginPath();ctx.arc(e.x,e.y,e.size*2,0,6.28);ctx.fillStyle=hsl(20,60,50,a*.1);ctx.fill();}
+    }
+    // Death Star sphere
+    if(this.phase!=='ash'||this.time<3){
+      const ds=this.size,dx=this.x,dy=this.y;
+      const fadeOut=this.phase==='leave'?Math.max(0,1-this.time/5):1;
+      ctx.save();ctx.globalAlpha=fadeOut;
+      // Base sphere
+      const sg=ctx.createRadialGradient(dx-ds*.15,dy-ds*.15,0,dx,dy,ds);
+      sg.addColorStop(0,'#8a8a8a');sg.addColorStop(.3,'#6a6a6a');sg.addColorStop(.7,'#4a4a4a');sg.addColorStop(1,'#2a2a2a');
+      ctx.beginPath();ctx.arc(dx,dy,ds,0,6.28);ctx.fillStyle=sg;ctx.fill();
+      // Equatorial trench (dark band)
+      if(ds>15){
+        ctx.save();ctx.beginPath();ctx.arc(dx,dy,ds,0,6.28);ctx.clip();
+        ctx.fillStyle='rgba(15,15,15,.4)';ctx.fillRect(dx-ds,dy-ds*.06,ds*2,ds*.12);
+        // Surface detail lines
+        ctx.strokeStyle='rgba(30,30,30,.2)';ctx.lineWidth=.5;ctx.beginPath();
+        for(let i=0;i<6;i++){const ly=dy-ds*.8+i*ds*.32;ctx.moveTo(dx-ds,ly);ctx.lineTo(dx+ds,ly);}
+        for(let i=0;i<6;i++){const a=i*.5+.3;ctx.moveTo(dx+Math.cos(a)*ds,dy+Math.sin(a)*ds*.3);ctx.lineTo(dx+Math.cos(a+.3)*ds,dy-Math.sin(a+.3)*ds*.3);}
+        ctx.stroke();
+        // Superlaser dish (concave circle in upper-right)
+        const dishX=dx+ds*.35,dishY=dy-ds*.25,dishR=ds*.22;
+        ctx.beginPath();ctx.arc(dishX,dishY,dishR,0,6.28);
+        ctx.fillStyle='rgba(10,10,10,.5)';ctx.fill();
+        ctx.beginPath();ctx.arc(dishX,dishY,dishR*.6,0,6.28);
+        ctx.fillStyle='rgba(5,5,5,.6)';ctx.fill();
+        ctx.restore();
+        // Charge glow
+        if(this.phase==='charge'){
+          const cp=Math.min(this.time/4,1);const pulse=.5+.5*Math.sin(this.time*6);
+          const cg=ctx.createRadialGradient(dishX,dishY,0,dishX,dishY,dishR*2);
+          cg.addColorStop(0,`rgba(100,255,100,${cp*pulse*.4})`);
+          cg.addColorStop(.5,`rgba(50,200,50,${cp*pulse*.15})`);
+          cg.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.beginPath();ctx.arc(dishX,dishY,dishR*2,0,6.28);ctx.fillStyle=cg;ctx.fill();
+        }
+        // Laser beam
+        if(this.phase==='fire'){
+          const la=Math.min(this.time/.3,1);
+          const lx=dishX,ly2=dishY;
+          // Main beam
+          ctx.save();ctx.globalAlpha=la;
+          const lg=ctx.createLinearGradient(lx-8,0,lx+8,0);
+          lg.addColorStop(0,'rgba(0,100,0,0)');lg.addColorStop(.3,`rgba(50,255,50,.3)`);
+          lg.addColorStop(.5,`rgba(150,255,150,.6)`);lg.addColorStop(.7,`rgba(50,255,50,.3)`);
+          lg.addColorStop(1,'rgba(0,100,0,0)');
+          ctx.fillStyle=lg;ctx.fillRect(lx-15,ly2,30,this.laserY-ly2);
+          // Bright core
+          ctx.fillStyle=`rgba(200,255,200,${la*.5})`;ctx.fillRect(lx-2,ly2,4,this.laserY-ly2);
+          // Impact glow
+          if(this.laserY>HOR){
+            const ig=ctx.createRadialGradient(lx,this.laserY,0,lx,this.laserY,80*la);
+            ig.addColorStop(0,`rgba(150,255,100,${la*.3})`);ig.addColorStop(.5,`rgba(100,200,50,${la*.1})`);
+            ig.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.beginPath();ctx.arc(lx,this.laserY,80*la,0,6.28);ctx.fillStyle=ig;ctx.fill();
+            // Spreading destruction wave
+            const spread=ease.out(Math.min((this.time-.3)/1.5,1))*W;
+            ctx.fillStyle=`rgba(255,200,100,${la*.08})`;ctx.fillRect(lx-spread,HOR,spread*2,H-HOR);
+          }
+          ctx.restore();
+        }
+      }
+      // Outline glow
+      ctx.beginPath();ctx.arc(dx,dy,ds+1,0,6.28);ctx.strokeStyle='rgba(100,100,120,.15)';ctx.lineWidth=1;ctx.stroke();
+      ctx.restore();
+    }
+    if(sx||sy)ctx.restore();
+  }
+}
+
+// ══════════════════════════════════════════
 // GARDEN ORCHESTRATOR
 // ══════════════════════════════════════════
 class Garden{
@@ -2351,6 +2476,7 @@ class Garden{
     this.snowfall=new Snowfall();
     this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
     this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
+    this.deathStar=new DeathStar();
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
     this.waveTimer=R(3,7);
@@ -2437,6 +2563,7 @@ class Garden{
     this.snowfall.update(dt,this.time);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
     this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
+    this.deathStar.update(dt,this.time,this);
   }
 
   draw(){
@@ -2502,6 +2629,7 @@ class Garden{
     this.lighthouse.draw();
     this.drawSunlight();
     // Post-processing overlays (on top of everything)
+    this.deathStar.draw(this.time);
     this.eclipse.draw();
     this.lightning.draw();
     this.snowfall.draw();
