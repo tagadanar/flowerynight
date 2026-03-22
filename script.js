@@ -1604,8 +1604,52 @@ class Snowfall{
 // SKY: CONSTELLATIONS
 // ══════════════════════════════════════════
 class Constellations{
-  constructor(){this.groups=[];for(let i=0,n=RI(5,8);i<n;i++){const cx=R(.1,.9),cy=R(.05,.7),st=[],c=RI(4,7);for(let j=0;j<c;j++)st.push({x:cx+R(-.08,.08),y:cy+R(-.06,.06)});const ln=[];for(let j=0;j<c-1;j++)ln.push([j,j+1]);if(c>4)ln.push([0,RI(2,c-1)]);this.groups.push({st,ln,a:R(.06,.15)});}}
-  draw(time){ctx.lineWidth=.4;for(const g of this.groups){const a=g.a*(.6+.4*Math.sin(time*.08));ctx.strokeStyle=`rgba(180,200,255,${a})`;ctx.beginPath();for(const[i,j] of g.ln){ctx.moveTo(g.st[i].x*W,g.st[i].y*HOR);ctx.lineTo(g.st[j].x*W,g.st[j].y*HOR);}ctx.stroke();ctx.fillStyle=`rgba(220,230,255,${a*1.8})`;ctx.beginPath();for(const s of g.st){ctx.moveTo(s.x*W+1.2,s.y*HOR);ctx.arc(s.x*W,s.y*HOR,1.2,0,6.28);}ctx.fill();}}
+  constructor(){
+    // Real constellation patterns (normalized coords, scaled to sky)
+    const defs=[
+      {name:'Orion',stars:[[0,0],[.02,-.08],[.04,-.15],[.01,-.22],[-.02,-.28],[.06,-.22],[.09,-.27],[.04,-.04],[-.03,-.04]],
+        lines:[[0,1],[1,2],[2,3],[3,4],[2,5],[5,6],[0,7],[0,8],[7,8]],bright:[2,3,0]},
+      {name:'Big Dipper',stars:[[0,0],[.05,-.02],[.1,-.01],[.14,-.04],[.18,-.02],[.22,-.05],[.25,-.03]],
+        lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[3,6]],bright:[0,6]},
+      {name:'Cassiopeia',stars:[[0,0],[.04,-.06],[.09,-.02],[.14,-.07],[.19,-.03]],
+        lines:[[0,1],[1,2],[2,3],[3,4]],bright:[2]},
+      {name:'Cygnus',stars:[[0,-.12],[.03,-.06],[.06,0],[.09,-.06],[.12,-.12],[-.02,-.06],[.08,-.06]],
+        lines:[[0,1],[1,2],[2,3],[3,4],[5,1],[1,6]],bright:[1]},
+      {name:'Leo',stars:[[0,0],[.04,-.03],[.07,-.06],[.1,-.04],[.08,-.01],[.04,.01],[.12,0],[.15,-.02]],
+        lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[3,6],[6,7]],bright:[0,2]},
+      {name:'Scorpius',stars:[[0,0],[.03,-.02],[.06,-.01],[.09,-.03],[.11,-.06],[.13,-.09],[.11,-.11],[.09,-.1]],
+        lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]],bright:[0,5]},
+      {name:'Lyra',stars:[[0,-.06],[.02,0],[.05,0],[.05,-.04],[.02,-.04]],
+        lines:[[0,1],[0,4],[1,2],[2,3],[3,4],[1,4]],bright:[0]},
+      {name:'Gemini',stars:[[0,0],[.02,-.05],[.04,-.09],[.06,-.05],[.08,-.01],[.03,-.12],[.07,-.11]],
+        lines:[[0,1],[1,2],[2,5],[3,4],[3,6],[1,3]],bright:[5,6]},
+    ];
+    // Pick 4-5 and place them across the sky
+    const chosen=[];const used=new Set();
+    for(let i=0;i<Math.min(RI(4,5),defs.length);i++){let idx;do{idx=RI(0,defs.length-1);}while(used.has(idx));used.add(idx);chosen.push(defs[idx]);}
+    this.groups=[];const scale=R(.6,.9);
+    for(let i=0;i<chosen.length;i++){
+      const d=chosen[i],ox=R(.08,.85),oy=R(.08,.65);
+      const st=d.stars.map(s=>({x:ox+s[0]*scale,y:oy+s[1]*scale,bright:false}));
+      for(const b of(d.bright||[]))if(st[b])st[b].bright=true;
+      this.groups.push({st,ln:d.lines,a:R(.08,.18),name:d.name,labelA:0,labelX:ox+.05,labelY:oy-.02,seed:R(0,1000)});
+    }
+  }
+  draw(time){
+    for(const g of this.groups){
+      const a=g.a*(.55+.45*Math.sin(time*.06+g.seed));
+      // Connecting lines — faint dashed feel
+      ctx.strokeStyle=`rgba(150,180,240,${a*.7})`;ctx.lineWidth=.4;ctx.beginPath();
+      for(const[i,j] of g.ln){ctx.moveTo(g.st[i].x*W,g.st[i].y*HOR);ctx.lineTo(g.st[j].x*W,g.st[j].y*HOR);}ctx.stroke();
+      // Stars — brighter for key stars
+      for(const s of g.st){const sz=s.bright?1.8:1;const sa=s.bright?a*2.5:a*1.6;
+        if(s.bright){ctx.beginPath();ctx.arc(s.x*W,s.y*HOR,4,0,6.28);ctx.fillStyle=`rgba(200,220,255,${a*.06})`;ctx.fill();}
+        ctx.beginPath();ctx.arc(s.x*W,s.y*HOR,sz,0,6.28);ctx.fillStyle=`rgba(220,230,255,${sa})`;ctx.fill();}
+      // Constellation name — very faint, fades in and out
+      const la=a*.35*(.5+.5*Math.sin(time*.04+g.seed+1));
+      if(la>.02){ctx.font='7px sans-serif';ctx.fillStyle=`rgba(160,180,220,${la})`;ctx.fillText(g.name,g.labelX*W,g.labelY*HOR);}
+    }
+  }
 }
 
 // ══════════════════════════════════════════
