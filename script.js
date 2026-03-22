@@ -352,7 +352,7 @@ class SupernovaSystem{
 // ══════════════════════════════════════════
 class NebulaWisps{
   constructor(){this.wisps=[];for(let i=0;i<5;i++)this.wisps.push({x:R(.1,.9),y:R(.1,.7),size:R(80,200),hue:pick([260,220,300,200,340]),sat:R(20,50),lit:R(30,55),alpha:R(.012,.035),seed:R(0,1000),speed:R(.003,.01)});}
-  draw(time){for(const w of this.wisps){const x=w.x*W+noise.fbm(w.seed+time*w.speed,0,3)*100,y=w.y*HOR+noise.fbm(0,w.seed+time*w.speed,3)*60;const p=w.alpha+Math.sin(time*.15+w.seed)*w.alpha*.3;const g=ctx.createRadialGradient(x,y,0,x,y,w.size);g.addColorStop(0,hsl(w.hue,w.sat,w.lit,p));g.addColorStop(.5,hsl(w.hue+20,w.sat-10,w.lit-10,p*.4));g.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(x,y,w.size,0,6.28);ctx.fillStyle=g;ctx.fill();}}
+  draw(time){for(const w of this.wisps){if(!w._t||time-w._t>.15){w._t=time;w._px=w.x*W+noise.fbm(w.seed+time*w.speed,0,2)*100;w._py=w.y*HOR+noise.fbm(0,w.seed+time*w.speed,2)*60;}const x=w._px,y=w._py;const p=w.alpha+Math.sin(time*.15+w.seed)*w.alpha*.3;const g=ctx.createRadialGradient(x,y,0,x,y,w.size);g.addColorStop(0,hsl(w.hue,w.sat,w.lit,p));g.addColorStop(.5,hsl(w.hue+20,w.sat-10,w.lit-10,p*.4));g.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(x,y,w.size,0,6.28);ctx.fillStyle=g;ctx.fill();}}
 }
 
 // ══════════════════════════════════════════
@@ -1656,8 +1656,11 @@ class Constellations{
 // SKY: MILKY WAY
 // ══════════════════════════════════════════
 class MilkyWay{
-  constructor(){this.angle=R(.3,.6);this.off=R(-.15,.15);this.stars=[];for(let i=0;i<150;i++){const t=R(0,1),ac=R(-.12,.12);this.stars.push({t,ac,size:R(.2,1),a:R(.04,.18)});}}
-  draw(){for(const s of this.stars){const x=(s.t+s.ac*Math.sin(this.angle))*W;const y=(s.t*this.angle+s.ac*Math.cos(this.angle)+this.off+.15)*HOR;if(y<0||y>HOR||x<0||x>W)continue;ctx.beginPath();ctx.arc(x,y,s.size,0,6.28);ctx.fillStyle=`rgba(200,210,240,${s.a})`;ctx.fill();}}
+  constructor(){this.angle=R(.3,.6);this.off=R(-.15,.15);this.stars=[];
+    for(let i=0;i<150;i++){const t=R(0,1),ac=R(-.12,.12);
+      const x=(t+ac*Math.sin(this.angle));const y=(t*this.angle+ac*Math.cos(this.angle)+this.off+.15);
+      if(y<0||y>1)continue;this.stars.push({px:x,py:y,size:R(.2,1),a:R(.04,.18)});}}
+  draw(){ctx.beginPath();for(const s of this.stars){ctx.moveTo(s.px*W+s.size,s.py*HOR);ctx.arc(s.px*W,s.py*HOR,s.size,0,6.28);}ctx.fillStyle='rgba(200,210,240,.1)';ctx.fill();}
 }
 
 // ══════════════════════════════════════════
@@ -1841,18 +1844,18 @@ class Pond{
     const wg=ctx.createRadialGradient(cx,cy-rh*.2,0,cx,cy,rw);
     wg.addColorStop(0,hsl(215,30,12,.75));wg.addColorStop(.4,hsl(210,28,15,.7));wg.addColorStop(.8,hsl(205,22,20,.6));wg.addColorStop(1,hsl(200,18,25,.4));
     ctx.fillStyle=wg;ctx.fillRect(cx-rw,cy-rh,rw*2,rh*2);
-    // Animated water shimmer waves
+    // Animated water shimmer waves (reduced from 6 to 4)
     ctx.globalAlpha=.06;
-    for(let i=0;i<6;i++){
-      const wy=cy-rh+i*rh*.35+Math.sin(time*.4+i*1.3)*3;
+    for(let i=0;i<4;i++){
+      const wy=cy-rh+i*rh*.5+Math.sin(time*.4+i*1.3)*3;
       ctx.beginPath();ctx.moveTo(cx-rw,wy);
-      for(let x=-rw;x<=rw;x+=8){ctx.lineTo(cx+x,wy+Math.sin(x*.04+time*1.2+i)*2.5);}
+      for(let x=-rw;x<=rw;x+=12){ctx.lineTo(cx+x,wy+Math.sin(x*.04+time*1.2+i)*2.5);}
       ctx.lineTo(cx+rw,wy+rh*.3);ctx.lineTo(cx-rw,wy+rh*.3);ctx.closePath();
       ctx.fillStyle=i%2===0?'rgba(150,180,220,.8)':'rgba(120,150,200,.5)';ctx.fill();
     }
     ctx.globalAlpha=1;
-    // Star reflections (more and animated)
-    for(let i=0;i<10;i++){
+    // Star reflections
+    for(let i=0;i<6;i++){
       const sx=cx+Math.sin(i*2.1+time*.15)*rw*.7;
       const sy=cy+Math.cos(i*1.7+time*.12)*rh*.6;
       const tw=.5+.5*Math.sin(time*1.2+i*3.7);
@@ -1966,8 +1969,8 @@ class SpiderWeb{
 // GROUND: CLOVER PATCH
 // ══════════════════════════════════════════
 class CloverPatch{
-  constructor(){this.patches=[];for(let i=0;i<RI(1,3);i++){const clovers=[],cx=R(W*.05,W*.95),cy=R(HOR+30,H*.9);for(let j=0;j<RI(5,12);j++)clovers.push({x:cx+R(-20,20),y:cy+R(-8,8),size:R(2,3.5),rot:R(0,6.28),four:Math.random()<.02});this.patches.push(clovers);}}
-  draw(time){for(const patch of this.patches){for(const c of patch){const s=c.size,sw=Math.sin(time*.5+c.x*.1)*1.5;ctx.save();ctx.translate(c.x+sw,c.y);ctx.rotate(c.rot);ctx.strokeStyle='rgba(60,120,40,.4)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,s*1.5);ctx.stroke();const leaves=c.four?4:3;ctx.fillStyle=c.four?'rgba(50,160,50,.6)':'rgba(50,120,40,.45)';for(let i=0;i<leaves;i++){ctx.save();ctx.rotate(i*(6.28/leaves));ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-s*.3,-s*.2,-s*.4,-s*.7,0,-s*.6);ctx.bezierCurveTo(s*.4,-s*.7,s*.3,-s*.2,0,0);ctx.fill();ctx.restore();}ctx.restore();}}}
+  constructor(){this.patches=[];for(let i=0;i<RI(1,3);i++){const clovers=[],cx=R(W*.05,W*.95),cy=R(HOR+30,H*.9);for(let j=0;j<RI(5,12);j++)clovers.push({x:cx+R(-20,20),y:cy+R(-8,8),size:R(2,3.5),rot:R(0,6.28),four:Math.random()<.02});this.patches.push(clovers);}this._oc=null;}
+  draw(time){for(const patch of this.patches){for(const c of patch){const s=c.size;ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.rot);ctx.strokeStyle='rgba(60,120,40,.4)';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,s*1.5);ctx.stroke();const leaves=c.four?4:3;ctx.fillStyle=c.four?'rgba(50,160,50,.6)':'rgba(50,120,40,.45)';for(let i=0;i<leaves;i++){ctx.save();ctx.rotate(i*(6.28/leaves));ctx.beginPath();ctx.moveTo(0,0);ctx.bezierCurveTo(-s*.3,-s*.2,-s*.4,-s*.7,0,-s*.6);ctx.bezierCurveTo(s*.4,-s*.7,s*.3,-s*.2,0,0);ctx.fill();ctx.restore();}ctx.restore();}}}
 }
 
 // ══════════════════════════════════════════
@@ -1983,64 +1986,30 @@ class FallenLog{
     this.cracks=[];for(let i=0;i<RI(1,3);i++)this.cracks.push({ox:R(-this.w*.3,this.w*.3),len:R(6,14),ang:R(-.3,.3)});
     // Broken branch stubs
     this.stubs=[];for(let i=0;i<RI(1,3);i++)this.stubs.push({ox:R(-this.w*.3,this.w*.35),h:R(6,14),w:R(2,4),side:Math.random()>.5?-1:1});
+    this._oc=null;
   }
-  draw(){
-    const w=this.w,t=this.th;ctx.save();ctx.translate(this.x,this.y);ctx.rotate(this.rot);
-    // Ground shadow
-    ctx.fillStyle='rgba(15,10,5,.12)';ctx.beginPath();ctx.ellipse(3,t*.6,w*.53,t*.6,.02,0,6.28);ctx.fill();
-    // Main log body — organic cylindrical shape with irregularities
-    ctx.beginPath();
-    ctx.moveTo(-w*.5,-t*.35);
-    ctx.bezierCurveTo(-w*.3,-t*.4,-w*.1,-t*.32,0,-t*.35);
-    ctx.bezierCurveTo(w*.15,-t*.38,w*.35,-t*.33,w*.45,-t*.36);
-    ctx.quadraticCurveTo(w*.55,-t*.15,w*.5,t*.1);
-    ctx.bezierCurveTo(w*.35,t*.35,w*.1,t*.32,0,t*.35);
-    ctx.bezierCurveTo(-w*.2,t*.38,-w*.4,t*.32,-w*.5,t*.36);
-    ctx.quadraticCurveTo(-w*.58,t*.12,-w*.53,-t*.08);
-    ctx.closePath();
-    const lg=ctx.createLinearGradient(0,-t*1.2,0,t*1.2);
-    lg.addColorStop(0,'#7a5a28');lg.addColorStop(.25,'#6b4a1e');lg.addColorStop(.5,'#5e4018');lg.addColorStop(.75,'#503514');lg.addColorStop(1,'#3e2a0e');
-    ctx.fillStyle=lg;ctx.fill();ctx.strokeStyle='rgba(35,25,10,.25)';ctx.lineWidth=.7;ctx.stroke();
-    // Bark texture — deep grooves
-    ctx.lineCap='round';
-    for(const b of this.bark){ctx.strokeStyle='rgba(30,20,8,.18)';ctx.lineWidth=b.w;
-      ctx.beginPath();ctx.moveTo(b.ox,-t*.33);ctx.bezierCurveTo(b.ox+b.c1,0,b.ox+b.w*.3,t*.15,b.ox+b.w,t*.33);ctx.stroke();
-      ctx.strokeStyle='rgba(90,65,30,.05)';ctx.lineWidth=b.w*.4;ctx.beginPath();ctx.moveTo(b.ox+b.w*.3,-t*.3);ctx.lineTo(b.ox+b.w*.5,t*.3);ctx.stroke();}
-    // Cracks
-    for(const cr of this.cracks){ctx.strokeStyle='rgba(20,14,5,.2)';ctx.lineWidth=.8;
-      ctx.beginPath();ctx.moveTo(cr.ox,-t*.15);ctx.bezierCurveTo(cr.ox+cr.len*.3,-t*.1+cr.ang*5,cr.ox+cr.len*.7,cr.ang*8,cr.ox+cr.len,cr.ang*12);ctx.stroke();}
-    // Knots with depth
-    for(const k of this.knots){ctx.fillStyle='rgba(30,20,10,.25)';ctx.beginPath();ctx.ellipse(k.ox,0,k.sz,k.sz*.75,.1,0,6.28);ctx.fill();
-      ctx.strokeStyle='rgba(50,35,15,.2)';ctx.lineWidth=.4;for(let r=k.sz*.2;r<k.sz;r+=k.sz*.2){ctx.beginPath();ctx.ellipse(k.ox,0,r,r*.75,0,0,6.28);ctx.stroke();}
-      ctx.fillStyle='rgba(15,10,5,.2)';ctx.beginPath();ctx.ellipse(k.ox,0,k.sz*.25,k.sz*.2,0,0,6.28);ctx.fill();}
-    // Cut end (left) — visible growth rings
-    ctx.beginPath();ctx.ellipse(-w*.51,0,t*.5,t*.55,0,0,6.28);
-    const eg=ctx.createRadialGradient(-w*.51,0,0,-w*.51,0,t*.5);
-    eg.addColorStop(0,'#d4b070');eg.addColorStop(.2,'#c4a060');eg.addColorStop(.5,'#a88548');eg.addColorStop(.8,'#8a6a35');eg.addColorStop(1,'#6a5025');
-    ctx.fillStyle=eg;ctx.fill();ctx.strokeStyle='rgba(50,35,15,.3)';ctx.lineWidth=.6;ctx.stroke();
-    ctx.strokeStyle='rgba(60,42,18,.15)';ctx.lineWidth=.3;
-    for(let r=t*.08;r<t*.48;r+=t*.06){ctx.beginPath();ctx.ellipse(-w*.51,0,r,r*1.1,0,0,6.28);ctx.stroke();}
-    // Pith at center
-    ctx.fillStyle='rgba(140,110,60,.2)';ctx.beginPath();ctx.arc(-w*.51,0,t*.06,0,6.28);ctx.fill();
-    // Broken end (right) — jagged splintered wood
-    ctx.beginPath();ctx.moveTo(w*.44,-t*.35);
-    ctx.lineTo(w*.48,-t*.5);ctx.lineTo(w*.46,-t*.42);ctx.lineTo(w*.52,-t*.55);ctx.lineTo(w*.5,-t*.35);
-    ctx.fillStyle='#5e4018';ctx.fill();
-    // Branch stubs
-    for(const st of this.stubs){const sy=st.side*t*.3;ctx.fillStyle='#4a3518';
-      ctx.beginPath();ctx.moveTo(st.ox-st.w*.5,sy);ctx.lineTo(st.ox-st.w*.3,sy+st.side*-st.h);
-      ctx.lineTo(st.ox+st.w*.3,sy+st.side*-st.h*.85);ctx.lineTo(st.ox+st.w*.5,sy);ctx.fill();
-      ctx.beginPath();ctx.ellipse(st.ox,sy+st.side*-st.h*.9,st.w*.4,st.w*.3,0,0,6.28);ctx.fillStyle='rgba(160,120,60,.3)';ctx.fill();}
-    // Moss on top
-    for(const m of this.moss){ctx.beginPath();ctx.ellipse(m.ox,-t*.33+m.szh*.2,m.sz,m.szh,m.r,0,6.28);ctx.fillStyle=hsl(m.hue,42,32,.5);ctx.fill();
-      ctx.beginPath();ctx.ellipse(m.ox,-t*.33+m.szh*.1,m.sz*.7,m.szh*.5,m.r,0,6.28);ctx.fillStyle=hsl(m.hue+10,38,38,.3);ctx.fill();}
-    // Mushrooms
-    for(const s of this.shrooms){const ss=s.sz,sy=s.side*t*.32;
-      ctx.fillStyle=hsl(s.hue,22,60,.5);ctx.beginPath();ctx.moveTo(s.ox-ss*.08,sy);ctx.lineTo(s.ox-ss*.05,sy+s.side*-ss*.5);ctx.lineTo(s.ox+ss*.05,sy+s.side*-ss*.5);ctx.lineTo(s.ox+ss*.08,sy);ctx.fill();
-      ctx.beginPath();ctx.ellipse(s.ox,sy+s.side*-ss*.5,ss*.55,ss*.3,0,s.side>0?Math.PI:0,s.side>0?0:Math.PI);ctx.fillStyle=hsl(s.hue,28,50,.6);ctx.fill();
-      ctx.fillStyle=hsl(s.hue,20,75,.3);ctx.beginPath();ctx.arc(s.ox-ss*.15,sy+s.side*-ss*.55,ss*.08,0,6.28);ctx.arc(s.ox+ss*.2,sy+s.side*-ss*.52,ss*.06,0,6.28);ctx.fill();}
-    ctx.restore();
+  _cache(){
+    const w=this.w,t=this.th,pad=30;const cw=w+pad*2,ch=t*2+pad*2;
+    const d=Math.min(window.devicePixelRatio||1,2);
+    this._oc=document.createElement('canvas');this._oc.width=Math.ceil(cw*d);this._oc.height=Math.ceil(ch*d);
+    const c=this._oc.getContext('2d');c.setTransform(d,0,0,d,0,0);c.translate(cw/2,ch/2);c.rotate(this.rot);
+    c.fillStyle='rgba(15,10,5,.12)';c.beginPath();c.ellipse(3,t*.6,w*.53,t*.6,.02,0,6.28);c.fill();
+    c.beginPath();c.moveTo(-w*.5,-t*.35);c.bezierCurveTo(-w*.3,-t*.4,-w*.1,-t*.32,0,-t*.35);c.bezierCurveTo(w*.15,-t*.38,w*.35,-t*.33,w*.45,-t*.36);c.quadraticCurveTo(w*.55,-t*.15,w*.5,t*.1);c.bezierCurveTo(w*.35,t*.35,w*.1,t*.32,0,t*.35);c.bezierCurveTo(-w*.2,t*.38,-w*.4,t*.32,-w*.5,t*.36);c.quadraticCurveTo(-w*.58,t*.12,-w*.53,-t*.08);c.closePath();
+    const lg=c.createLinearGradient(0,-t*1.2,0,t*1.2);lg.addColorStop(0,'#7a5a28');lg.addColorStop(.25,'#6b4a1e');lg.addColorStop(.5,'#5e4018');lg.addColorStop(.75,'#503514');lg.addColorStop(1,'#3e2a0e');
+    c.fillStyle=lg;c.fill();c.strokeStyle='rgba(35,25,10,.25)';c.lineWidth=.7;c.stroke();
+    c.lineCap='round';for(const b of this.bark){c.strokeStyle='rgba(30,20,8,.18)';c.lineWidth=b.w;c.beginPath();c.moveTo(b.ox,-t*.33);c.bezierCurveTo(b.ox+b.c1,0,b.ox+b.w*.3,t*.15,b.ox+b.w,t*.33);c.stroke();}
+    for(const cr of this.cracks){c.strokeStyle='rgba(20,14,5,.2)';c.lineWidth=.8;c.beginPath();c.moveTo(cr.ox,-t*.15);c.bezierCurveTo(cr.ox+cr.len*.3,-t*.1+cr.ang*5,cr.ox+cr.len*.7,cr.ang*8,cr.ox+cr.len,cr.ang*12);c.stroke();}
+    for(const k of this.knots){c.fillStyle='rgba(30,20,10,.25)';c.beginPath();c.ellipse(k.ox,0,k.sz,k.sz*.75,.1,0,6.28);c.fill();c.strokeStyle='rgba(50,35,15,.2)';c.lineWidth=.4;for(let r=k.sz*.2;r<k.sz;r+=k.sz*.2){c.beginPath();c.ellipse(k.ox,0,r,r*.75,0,0,6.28);c.stroke();}c.fillStyle='rgba(15,10,5,.2)';c.beginPath();c.ellipse(k.ox,0,k.sz*.25,k.sz*.2,0,0,6.28);c.fill();}
+    c.beginPath();c.ellipse(-w*.51,0,t*.5,t*.55,0,0,6.28);const eg=c.createRadialGradient(-w*.51,0,0,-w*.51,0,t*.5);eg.addColorStop(0,'#d4b070');eg.addColorStop(.2,'#c4a060');eg.addColorStop(.5,'#a88548');eg.addColorStop(.8,'#8a6a35');eg.addColorStop(1,'#6a5025');c.fillStyle=eg;c.fill();c.strokeStyle='rgba(50,35,15,.3)';c.lineWidth=.6;c.stroke();
+    c.strokeStyle='rgba(60,42,18,.15)';c.lineWidth=.3;for(let r=t*.08;r<t*.48;r+=t*.06){c.beginPath();c.ellipse(-w*.51,0,r,r*1.1,0,0,6.28);c.stroke();}
+    c.fillStyle='rgba(140,110,60,.2)';c.beginPath();c.arc(-w*.51,0,t*.06,0,6.28);c.fill();
+    c.beginPath();c.moveTo(w*.44,-t*.35);c.lineTo(w*.48,-t*.5);c.lineTo(w*.46,-t*.42);c.lineTo(w*.52,-t*.55);c.lineTo(w*.5,-t*.35);c.fillStyle='#5e4018';c.fill();
+    for(const st of this.stubs){const sy=st.side*t*.3;c.fillStyle='#4a3518';c.beginPath();c.moveTo(st.ox-st.w*.5,sy);c.lineTo(st.ox-st.w*.3,sy+st.side*-st.h);c.lineTo(st.ox+st.w*.3,sy+st.side*-st.h*.85);c.lineTo(st.ox+st.w*.5,sy);c.fill();c.beginPath();c.ellipse(st.ox,sy+st.side*-st.h*.9,st.w*.4,st.w*.3,0,0,6.28);c.fillStyle='rgba(160,120,60,.3)';c.fill();}
+    for(const m of this.moss){c.beginPath();c.ellipse(m.ox,-t*.33+m.szh*.2,m.sz,m.szh,m.r,0,6.28);c.fillStyle=hsl(m.hue,42,32,.5);c.fill();c.beginPath();c.ellipse(m.ox,-t*.33+m.szh*.1,m.sz*.7,m.szh*.5,m.r,0,6.28);c.fillStyle=hsl(m.hue+10,38,38,.3);c.fill();}
+    for(const s of this.shrooms){const ss=s.sz,sy=s.side*t*.32;c.fillStyle=hsl(s.hue,22,60,.5);c.beginPath();c.moveTo(s.ox-ss*.08,sy);c.lineTo(s.ox-ss*.05,sy+s.side*-ss*.5);c.lineTo(s.ox+ss*.05,sy+s.side*-ss*.5);c.lineTo(s.ox+ss*.08,sy);c.fill();c.beginPath();c.ellipse(s.ox,sy+s.side*-ss*.5,ss*.55,ss*.3,0,s.side>0?Math.PI:0,s.side>0?0:Math.PI);c.fillStyle=hsl(s.hue,28,50,.6);c.fill();}
+    this._cw=cw;this._ch=ch;
   }
+  draw(){if(!this._oc)this._cache();ctx.drawImage(this._oc,this.x-this._cw/2,this.y-this._ch/2,this._cw,this._ch);}
 }
 
 // ══════════════════════════════════════════
