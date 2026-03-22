@@ -580,6 +580,7 @@ class Diglett{
           w:count===1?R(13,17):R(11,15), // body half-width
           blinkTimer:R(2,5),blinkDur:0,isBlinking:false,
           lookDir:0,lookTimer:R(1,3),
+          hat:RI(0,9),hatColor:pick([0,15,30,45,120,200,220,260,280,330,340]),
         });
       }
       this.moles.push({members,time:0,duration:R(3.5,7),phase:'rise',seed:R(0,1000)});
@@ -748,6 +749,161 @@ class Diglett{
 
         ctx.restore();
       }
+
+      // Draw hats (outside clip so they show above ground)
+      for(const m of group.members){
+        const rise=m.riseH*riseAmt;if(rise<3)continue;
+        const w=m.w,topY=m.y-rise;
+        const hx=m.x,hy=topY-w*.8; // hat anchor point (top of head)
+        ctx.save();ctx.translate(hx,hy);
+        this._drawHat(ctx,w,m.hat,m.hatColor);
+        ctx.restore();
+      }
+    }
+  }
+  _drawHat(c,w,type,hue){
+    const s=w*.7; // hat scale
+    switch(type){
+      case 0: // Top hat — tall black cylinder
+        c.fillStyle='#1a1a22';c.beginPath();
+        c.rect(-s*.6,-s*1.6,s*1.2,s*1.4);c.fill();
+        c.fillStyle='#222230';c.beginPath();
+        c.ellipse(0,-s*1.6,s*.65,s*.2,0,0,6.28);c.fill();
+        c.fillStyle='#151520';c.beginPath();
+        c.ellipse(0,-s*.2,s*.85,s*.22,0,0,6.28);c.fill();
+        // Band
+        c.fillStyle=hsl(hue,60,45,.8);
+        c.fillRect(-s*.62,-s*.55,s*1.24,s*.18);
+        break;
+      case 1: // Cowboy hat — wide brim, pinched crown
+        c.fillStyle=hsl(25,40,35);c.beginPath();
+        c.ellipse(0,-s*.15,s*1.3,s*.25,0,0,6.28);c.fill();
+        c.beginPath();c.moveTo(-s*.5,-s*.2);
+        c.bezierCurveTo(-s*.55,-s*.9,-s*.3,-s*1.2,0,-s*1);
+        c.bezierCurveTo(s*.3,-s*1.2,s*.55,-s*.9,s*.5,-s*.2);c.closePath();
+        c.fillStyle=hsl(25,38,30);c.fill();
+        // Hat band
+        c.strokeStyle=hsl(hue,50,50,.7);c.lineWidth=1.2;
+        c.beginPath();c.moveTo(-s*.48,-s*.25);c.quadraticCurveTo(0,-s*.35,s*.48,-s*.25);c.stroke();
+        // Star badge
+        c.fillStyle=hsl(45,80,65,.7);c.beginPath();
+        for(let i=0;i<5;i++){const a=i*1.256-1.57,r2=i*1.256-1.57+.628;
+          c.lineTo(Math.cos(a)*s*.12,-s*.55+Math.sin(a)*s*.12);c.lineTo(Math.cos(r2)*s*.05,-s*.55+Math.sin(r2)*s*.05);}c.fill();
+        break;
+      case 2: // Party hat — striped cone with pompom
+        c.beginPath();c.moveTo(-s*.45,-s*.1);c.lineTo(0,-s*1.6);c.lineTo(s*.45,-s*.1);c.closePath();
+        c.fillStyle=hsl(hue,65,55);c.fill();
+        // Stripes
+        c.save();c.clip();
+        for(let i=0;i<5;i++){c.fillStyle=i%2?hsl(hue+40,70,70,.5):'rgba(255,255,255,.25)';
+          c.fillRect(-s,-s*.1-i*s*.32,s*2,s*.16);}c.restore();
+        // Elastic band
+        c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=.5;
+        c.beginPath();c.moveTo(-s*.5,-s*.05);c.quadraticCurveTo(0,s*.1,s*.5,-s*.05);c.stroke();
+        // Pompom
+        c.fillStyle=hsl(hue+180,60,70);c.beginPath();c.arc(0,-s*1.6,s*.2,0,6.28);c.fill();
+        c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.arc(-s*.05,-s*1.65,s*.07,0,6.28);c.fill();
+        break;
+      case 3: // Crown — gold with jewels
+        c.fillStyle=hsl(45,80,55);c.beginPath();
+        c.moveTo(-s*.6,-s*.1);c.lineTo(-s*.6,-s*.6);c.lineTo(-s*.35,-s*.4);c.lineTo(-s*.15,-s*.8);
+        c.lineTo(0,-s*.5);c.lineTo(s*.15,-s*.8);c.lineTo(s*.35,-s*.4);c.lineTo(s*.6,-s*.6);
+        c.lineTo(s*.6,-s*.1);c.closePath();c.fill();
+        c.strokeStyle='rgba(160,120,20,.4)';c.lineWidth=.5;c.stroke();
+        // Band
+        c.fillStyle=hsl(45,70,45);c.fillRect(-s*.6,-s*.2,s*1.2,s*.12);
+        // Jewels
+        c.fillStyle='rgba(220,40,40,.7)';c.beginPath();c.arc(0,-s*.14,s*.08,0,6.28);c.fill();
+        c.fillStyle='rgba(40,100,220,.7)';c.beginPath();c.arc(-s*.3,-s*.14,s*.06,0,6.28);c.fill();
+        c.fillStyle='rgba(40,200,80,.7)';c.beginPath();c.arc(s*.3,-s*.14,s*.06,0,6.28);c.fill();
+        // Shine
+        c.fillStyle='rgba(255,250,200,.3)';c.beginPath();c.arc(-s*.2,-s*.65,s*.04,0,6.28);c.fill();
+        break;
+      case 4: // Beret — flat French cap
+        c.fillStyle=hsl(hue,45,35);c.beginPath();
+        c.ellipse(0,-s*.25,s*.75,s*.35,-.1,0,6.28);c.fill();
+        c.fillStyle=hsl(hue,40,30);c.beginPath();
+        c.ellipse(0,-s*.1,s*.65,s*.15,0,0,6.28);c.fill();
+        // Little stem on top
+        c.fillStyle=hsl(hue,40,30);c.beginPath();c.arc(s*.05,-s*.55,s*.08,0,6.28);c.fill();
+        break;
+      case 5: // Wizard hat — tall pointy with stars and moon
+        c.beginPath();c.moveTo(-s*.65,-s*.1);
+        c.quadraticCurveTo(-s*.2,-s*.8,s*.15,-s*1.8);
+        c.quadraticCurveTo(s*.1,-s*.9,s*.6,-s*.1);c.closePath();
+        c.fillStyle=hsl(250,40,25);c.fill();
+        // Brim
+        c.fillStyle=hsl(250,35,22);c.beginPath();c.ellipse(0,-s*.05,s*.8,s*.18,0,0,6.28);c.fill();
+        // Stars & moon decorations
+        c.fillStyle=hsl(45,80,70,.6);
+        c.beginPath();c.arc(-s*.1,-s*.9,s*.08,0,6.28);c.fill();
+        c.beginPath();c.arc(s*.2,-s*.5,s*.06,0,6.28);c.fill();
+        c.beginPath();c.arc(-s*.25,-s*.55,s*.05,0,6.28);c.fill();
+        // Crescent moon
+        c.beginPath();c.arc(s*.05,-s*1.2,s*.1,0,6.28);c.fill();
+        c.fillStyle=hsl(250,40,25);c.beginPath();c.arc(s*.1,-s*1.15,s*.08,0,6.28);c.fill();
+        break;
+      case 6: // Flower crown — wreath of tiny flowers
+        c.strokeStyle='rgba(60,100,30,.6)';c.lineWidth=1.5;
+        c.beginPath();c.ellipse(0,-s*.3,s*.6,s*.25,.05,Math.PI,.01);c.stroke();
+        const fhues=[340,45,280,30,310];
+        for(let i=0;i<5;i++){const fa=Math.PI+i*.7-.2,fr=s*.6;
+          const fx=Math.cos(fa)*fr,fy=-s*.3+Math.sin(fa)*s*.25;
+          for(let p=0;p<5;p++){c.fillStyle=hsl(fhues[i],55,65,.7);c.beginPath();
+            c.save();c.translate(fx,fy);c.rotate(p*1.256);
+            c.ellipse(0,-s*.08,s*.06,s*.04,0,0,6.28);c.fill();c.restore();}
+          c.fillStyle='rgba(255,220,80,.6)';c.beginPath();c.arc(fx,fy,s*.03,0,6.28);c.fill();}
+        break;
+      case 7: // Santa hat — red with white fur trim
+        c.beginPath();c.moveTo(-s*.55,-s*.1);
+        c.quadraticCurveTo(-s*.1,-s*.5,s*.35,-s*1.4);
+        c.quadraticCurveTo(s*.5,-s*1.2,s*.55,-s*.1);c.closePath();
+        c.fillStyle='rgba(200,30,30,.85)';c.fill();
+        // White fur band
+        c.fillStyle='rgba(240,240,245,.8)';c.beginPath();
+        c.ellipse(0,-s*.1,s*.65,s*.18,0,0,6.28);c.fill();
+        // Fur texture dots
+        c.fillStyle='rgba(220,220,225,.4)';
+        for(let i=0;i<4;i++){c.beginPath();c.arc(-s*.4+i*s*.25,-s*.1,s*.04,0,6.28);c.fill();}
+        // Pompom
+        c.fillStyle='rgba(245,245,250,.85)';c.beginPath();c.arc(s*.35,-s*1.4,s*.2,0,6.28);c.fill();
+        c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.arc(s*.32,-s*1.45,s*.07,0,6.28);c.fill();
+        break;
+      case 8: // Chef toque — tall white puffy hat
+        c.fillStyle='rgba(245,245,248,.85)';
+        // Puffy top (multiple overlapping circles)
+        c.beginPath();c.arc(-s*.2,-s*.9,s*.35,0,6.28);c.fill();
+        c.beginPath();c.arc(s*.15,-s*1,s*.3,0,6.28);c.fill();
+        c.beginPath();c.arc(0,-s*1.1,s*.32,0,6.28);c.fill();
+        c.beginPath();c.arc(-s*.1,-s*.75,s*.28,0,6.28);c.fill();
+        c.beginPath();c.arc(s*.05,-s*.8,s*.3,0,6.28);c.fill();
+        // Band at bottom
+        c.fillStyle='rgba(235,235,240,.9)';
+        c.fillRect(-s*.5,-s*.25,s*1,s*.2);
+        c.strokeStyle='rgba(180,180,190,.3)';c.lineWidth=.4;
+        c.strokeRect(-s*.5,-s*.25,s*1,s*.2);
+        break;
+      case 9: // Pirate tricorn — with skull
+        c.fillStyle='#1e1e25';c.beginPath();
+        // Tricorn shape
+        c.moveTo(-s*.8,-s*.15);c.quadraticCurveTo(-s*.6,-s*.5,-s*.2,-s*.7);
+        c.lineTo(0,-s*1);c.lineTo(s*.2,-s*.7);
+        c.quadraticCurveTo(s*.6,-s*.5,s*.8,-s*.15);
+        c.quadraticCurveTo(s*.3,s*.05,-s*.3,s*.05);
+        c.quadraticCurveTo(-s*.6,0,-s*.8,-s*.15);c.fill();
+        // Brim edge highlight
+        c.strokeStyle='rgba(80,70,50,.3)';c.lineWidth=.5;c.stroke();
+        // Gold trim
+        c.strokeStyle=hsl(45,70,60,.5);c.lineWidth=.8;
+        c.beginPath();c.moveTo(-s*.7,-s*.12);c.quadraticCurveTo(0,s*.08,s*.7,-s*.12);c.stroke();
+        // Skull & crossbones
+        c.fillStyle='rgba(240,240,230,.6)';c.beginPath();c.arc(0,-s*.45,s*.15,0,6.28);c.fill();
+        // Eye sockets
+        c.fillStyle='#1e1e25';c.beginPath();c.arc(-s*.06,-s*.47,s*.04,0,6.28);c.arc(s*.06,-s*.47,s*.04,0,6.28);c.fill();
+        // Crossbones
+        c.strokeStyle='rgba(240,240,230,.5)';c.lineWidth=1;c.lineCap='round';
+        c.beginPath();c.moveTo(-s*.15,-s*.3);c.lineTo(s*.15,-s*.55);c.moveTo(s*.15,-s*.3);c.lineTo(-s*.15,-s*.55);c.stroke();
+        break;
     }
   }
 }
