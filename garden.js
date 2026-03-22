@@ -41,6 +41,7 @@ class Garden{
     this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
     this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
     this.meteorImpact=new MeteorImpact();this.deathStar=new DeathStar();
+    this.dragon=new Dragon();this.magicCarpet=new MagicCarpet();
 
     // All events can happen early — randomize initial timers to short values
     // Repeat timers (set when events end) keep their designed longer intervals
@@ -49,7 +50,7 @@ class Garden{
       this.hotAirBalloon,this.skyWhale,this.greatBloom,this.ufoSystem,this.grandRose,
       this.giantBloom,this.satellite,this.planet,this.wishingStar,this.fireflySwarm,
       this.distantTrain,this.lighthouse,this.bannerPlane,this.paperLantern,this.musicNotes,
-      this.northStar,this.meteorImpact,this.deathStar];
+      this.northStar,this.meteorImpact,this.deathStar,this.dragon,this.magicCarpet];
     for(const e of earlyEvents){if(e.timer!==undefined)e.timer=R(5,45);}
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
@@ -85,7 +86,7 @@ class Garden{
     if(this.blossomStorm.active)n++;if(this.lanternFestival.active)n++;if(this.windGust.active)n++;
     if(this.deathStar.phase!=='idle')n++;if(this.meteorImpact.phase!=='idle')n++;
     if(this.greatBloom.phase!=='idle')n++;if(this.skyWhale.active)n++;
-    if(this.hotAirBalloon.active)n++;if(this.ufoSystem.active)n++;return n;}
+    if(this.hotAirBalloon.active)n++;if(this.ufoSystem.active)n++;if(this.dragon.active)n++;return n;}
   initGrass(){this.grass=[];for(let x=0;x<W;x+=R(5,12)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
@@ -135,6 +136,7 @@ class Garden{
     this.lightning.update(dt);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
     this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
+    this.magicCarpet.update(dt,this.time);
     this.willOWisp.update(dt,this.time);this.grandRose.update(dt,this.time,this);this.giantBloom.update(dt,this.time,this);
     // Major events — gated (idle timers pause when 2 slots full)
     if(mj||this.aurora.active)this.aurora.update(dt,this.time);
@@ -152,6 +154,7 @@ class Garden{
     if(mj||this.greatBloom.phase!=='idle')this.greatBloom.update(dt,this.time,this);
     if(mj||this.meteorImpact.phase!=='idle')this.meteorImpact.update(dt,this.time,this);
     if(mj||this.deathStar.phase!=='idle')this.deathStar.update(dt,this.time,this);
+    if(mj||this.dragon.active)this.dragon.update(dt,this.time,this);
   }
 
   draw(){
@@ -178,6 +181,8 @@ class Garden{
     this.ufoSystem.draw(this.time);
     this.birdFlock.draw();
     this.bannerPlane.draw();
+    this.magicCarpet.draw(this.time);
+    this.dragon.draw(this.time);
     this.distantTrain.draw();
 
     // GROUND
