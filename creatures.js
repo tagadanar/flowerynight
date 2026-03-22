@@ -414,3 +414,126 @@ class WormSystem{
   update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(20,45);if(this.worms.length<2)this.worms.push({x:R(W*.1,W*.9),y:R(HOR+30,H*.9),time:0,duration:R(2,4),maxH:R(8,16)});}for(const w of this.worms)w.time+=dt;this.worms=this.worms.filter(w=>w.time<w.duration);}
   draw(){for(const w of this.worms){const t=w.time/w.duration;let rise;if(t<.3)rise=ease.out(t/.3);else if(t<.6)rise=1;else rise=1-ease.in((t-.6)/.4);const h=w.maxH*rise;ctx.save();ctx.translate(w.x,w.y);ctx.strokeStyle='rgba(180,140,120,.7)';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(3,-h*.5,Math.sin(w.time*5)*3,-h);ctx.stroke();ctx.restore();}}
 }
+
+// ══════════════════════════════════════════
+// CREATURES: CHILLING DUDE
+// ══════════════════════════════════════════
+class ChillingDude{
+  constructor(){this.active=false;this.timer=R(60,120);this.x=0;this.y=0;this.smokeRings=[];this.puffTimer=0;this.sitTime=0;this.seed=0;}
+  update(dt,time){
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(60,120);this.x=R(W*.1,W*.85);this.y=R(HOR+35,H*.85);this.smokeRings=[];this.puffTimer=R(2,4);this.sitTime=R(20,45);this.seed=R(0,1000);}return;}
+    this.sitTime-=dt;this.puffTimer-=dt;
+    if(this.puffTimer<=0){this.puffTimer=R(2.5,5);
+      this.smokeRings.push({x:this.x+8,y:this.y-18,r:2,vx:R(1,4),vy:R(-8,-4),life:R(3,6),maxLife:0});
+      this.smokeRings[this.smokeRings.length-1].maxLife=this.smokeRings[this.smokeRings.length-1].life;}
+    for(const s of this.smokeRings){s.x+=s.vx*dt+noise.get(s.x*.01+this.seed,time*.2)*3*dt;s.y+=s.vy*dt;s.r+=3*dt;s.life-=dt;}
+    this.smokeRings=this.smokeRings.filter(s=>s.life>0);
+    if(this.sitTime<=0){this.active=false;this.smokeRings=[];}
+  }
+  draw(time){
+    if(!this.active)return;const s=10;
+    ctx.save();ctx.translate(this.x,this.y);
+    // Smoke rings
+    for(const sr of this.smokeRings){const a=cl(sr.life/sr.maxLife,0,1)*.25;
+      ctx.beginPath();ctx.arc(sr.x-this.x,sr.y-this.y,sr.r,0,6.28);
+      ctx.strokeStyle=`rgba(180,180,190,${a})`;ctx.lineWidth=1.5;ctx.stroke();}
+    // Legs (stretched out)
+    ctx.strokeStyle='rgba(35,30,45,.8)';ctx.lineWidth=2.5;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-s*.2,s*.1);ctx.quadraticCurveTo(s*.5,s*.3,s*1.2,s*.2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-s*.1,s*.15);ctx.quadraticCurveTo(s*.3,s*.5,s*1,s*.45);ctx.stroke();
+    // Body (leaning back)
+    ctx.fillStyle='rgba(35,30,45,.85)';
+    ctx.beginPath();ctx.ellipse(-s*.1,-s*.15,s*.35,s*.5,-.2,0,6.28);ctx.fill();
+    // Arm holding item
+    ctx.strokeStyle='rgba(35,30,45,.8)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(s*.1,-s*.3);ctx.quadraticCurveTo(s*.5,-s*.5,s*.7,-s*.6);ctx.stroke();
+    // Item (small stick)
+    ctx.strokeStyle='rgba(120,100,70,.6)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(s*.7,-s*.6);ctx.lineTo(s*.9,-s*.7);ctx.stroke();
+    // Smoke wisp from tip
+    const puff=Math.sin(time*3+this.seed)*.3+.5;
+    ctx.fillStyle=`rgba(180,180,190,${puff*.15})`;ctx.beginPath();ctx.arc(s*.95,-s*.75,2+puff,0,6.28);ctx.fill();
+    // Head
+    ctx.fillStyle='rgba(35,30,45,.85)';ctx.beginPath();ctx.arc(0,-s*.8,s*.3,0,6.28);ctx.fill();
+    // Sunglasses — cool
+    ctx.fillStyle='rgba(10,10,15,.8)';
+    ctx.beginPath();ctx.ellipse(-s*.12,-s*.82,s*.12,s*.08,0,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.ellipse(s*.1,-s*.82,s*.12,s*.08,0,0,6.28);ctx.fill();
+    ctx.strokeStyle='rgba(10,10,15,.7)';ctx.lineWidth=.8;
+    ctx.beginPath();ctx.moveTo(-s*.01,-s*.82);ctx.lineTo(s*.01,-s*.82);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-s*.24,-s*.82);ctx.lineTo(-s*.3,-s*.78);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s*.22,-s*.82);ctx.lineTo(s*.3,-s*.78);ctx.stroke();
+    // Beanie/cap
+    ctx.fillStyle='rgba(60,40,80,.7)';ctx.beginPath();
+    ctx.ellipse(0,-s*1,s*.3,s*.12,-.1,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.arc(0,-s*.95,s*.28,Math.PI,.05);ctx.fill();
+    // Slight smile
+    ctx.strokeStyle='rgba(180,160,140,.4)';ctx.lineWidth=.6;
+    ctx.beginPath();ctx.arc(0,-s*.72,s*.1,.2,.9);ctx.stroke();
+    // Shoes
+    ctx.fillStyle='rgba(45,35,30,.7)';
+    ctx.beginPath();ctx.ellipse(s*1.2,s*.2,s*.15,s*.1,.3,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.ellipse(s*1,s*.45,s*.14,s*.09,.2,0,6.28);ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ══════════════════════════════════════════
+// CREATURES: PIKACHU
+// ══════════════════════════════════════════
+class Pikachu{
+  constructor(){this.active=false;this.timer=R(120,240);this.x=0;this.y=0;this.dir=1;this.moveTimer=0;this.sparkTimer=0;this.sparks=[];this.sitTime=0;}
+  update(dt,time){
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(120,240);this.x=R(W*.1,W*.85);this.y=R(HOR+30,H*.85);this.dir=Math.random()>.5?1:-1;this.moveTimer=R(2,5);this.sparkTimer=R(4,8);this.sparks=[];this.sitTime=R(15,30);}return;}
+    this.sitTime-=dt;this.moveTimer-=dt;this.sparkTimer-=dt;
+    if(this.moveTimer<=0){this.dir*=-1;this.moveTimer=R(2,5);this.x+=this.dir*R(10,30);}
+    // Occasional electric sparks
+    if(this.sparkTimer<=0){this.sparkTimer=R(3,7);
+      for(let i=0;i<RI(3,6);i++){const a=R(0,6.28);this.sparks.push({x:this.x+R(-8,8),y:this.y-10+R(-8,4),vx:Math.cos(a)*R(15,40),vy:Math.sin(a)*R(15,40),life:R(.3,.8)});}}
+    for(const s of this.sparks){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;}
+    this.sparks=this.sparks.filter(s=>s.life>0);
+    if(this.sitTime<=0){this.active=false;this.sparks=[];}
+  }
+  draw(time){
+    if(!this.active)return;const s=8;
+    ctx.save();ctx.translate(this.x,this.y);if(this.dir<0)ctx.scale(-1,1);
+    // Electric sparks
+    ctx.strokeStyle='rgba(255,255,80,.6)';ctx.lineWidth=1;
+    for(const sp of this.sparks){const a=cl(sp.life/.3,0,1);ctx.globalAlpha=a;
+      ctx.beginPath();ctx.moveTo(sp.x-this.x,sp.y-this.y);ctx.lineTo(sp.x-this.x+R(-3,3),sp.y-this.y+R(-3,3));ctx.stroke();}
+    ctx.globalAlpha=1;
+    // Body — yellow
+    ctx.fillStyle='rgba(255,220,40,.85)';ctx.beginPath();ctx.ellipse(0,0,s*.55,s*.65,0,0,6.28);ctx.fill();
+    // Head
+    ctx.beginPath();ctx.arc(0,-s*.8,s*.45,0,6.28);ctx.fill();
+    // Ears — long with black tips
+    ctx.fillStyle='rgba(255,220,40,.85)';
+    ctx.beginPath();ctx.moveTo(-s*.25,-s*1.1);ctx.lineTo(-s*.45,-s*1.8);ctx.lineTo(-s*.05,-s*1.2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(s*.15,-s*1.1);ctx.lineTo(s*.4,-s*1.75);ctx.lineTo(s*.05,-s*1.15);ctx.fill();
+    // Black ear tips
+    ctx.fillStyle='rgba(30,25,20,.8)';
+    ctx.beginPath();ctx.moveTo(-s*.4,-s*1.6);ctx.lineTo(-s*.45,-s*1.8);ctx.lineTo(-s*.3,-s*1.55);ctx.fill();
+    ctx.beginPath();ctx.moveTo(s*.35,-s*1.55);ctx.lineTo(s*.4,-s*1.75);ctx.lineTo(s*.25,-s*1.5);ctx.fill();
+    // Red cheeks
+    ctx.fillStyle='rgba(220,60,50,.6)';ctx.beginPath();ctx.arc(-s*.3,-s*.7,s*.12,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.arc(s*.25,-s*.7,s*.12,0,6.28);ctx.fill();
+    // Eyes
+    ctx.fillStyle='rgba(15,15,10,.85)';ctx.beginPath();ctx.arc(-s*.15,-s*.85,s*.08,0,6.28);ctx.arc(s*.1,-s*.85,s*.08,0,6.28);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.arc(-s*.17,-s*.87,s*.03,0,6.28);ctx.arc(s*.08,-s*.87,s*.03,0,6.28);ctx.fill();
+    // Mouth
+    ctx.strokeStyle='rgba(30,20,10,.5)';ctx.lineWidth=.5;
+    ctx.beginPath();ctx.moveTo(-s*.05,-s*.7);ctx.quadraticCurveTo(0,-s*.65,s*.05,-s*.7);ctx.stroke();
+    // Lightning bolt tail
+    ctx.fillStyle='rgba(255,220,40,.85)';ctx.beginPath();
+    ctx.moveTo(s*.3,s*.1);ctx.lineTo(s*.6,-s*.3);ctx.lineTo(s*.45,-s*.1);
+    ctx.lineTo(s*.8,-s*.5);ctx.lineTo(s*.55,-s*.15);ctx.lineTo(s*.7,-s*.45);
+    ctx.lineTo(s*.35,s*.05);ctx.closePath();ctx.fill();
+    // Brown base of tail
+    ctx.fillStyle='rgba(140,90,30,.6)';ctx.beginPath();ctx.ellipse(s*.32,s*.08,s*.08,s*.05,.3,0,6.28);ctx.fill();
+    // Feet
+    ctx.fillStyle='rgba(255,220,40,.85)';
+    ctx.beginPath();ctx.ellipse(-s*.2,s*.6,s*.12,s*.06,0,0,6.28);ctx.fill();
+    ctx.beginPath();ctx.ellipse(s*.15,s*.6,s*.12,s*.06,0,0,6.28);ctx.fill();
+    ctx.restore();
+  }
+}

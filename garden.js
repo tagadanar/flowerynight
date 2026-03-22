@@ -23,6 +23,7 @@ class Garden{
     // Creatures
     this.owl=new Owl();this.frogSystem=new FrogSystem();this.snailSystem=new SnailSystem();
     this.ladybugSystem=new LadybugSystem();this.cat=new CatSilhouette();this.dragonflySystem=new DragonflySystem();this.wormSystem=new WormSystem();
+    this.chillingDude=new ChillingDude();this.pikachu=new Pikachu();
 
     // Weather
     this.rainEvent=new RainEvent();this.lightning=new DistantLightning();this.fogBank=new FogBank();this.windGust=new WindGust();
@@ -50,7 +51,8 @@ class Garden{
       this.hotAirBalloon,this.skyWhale,this.greatBloom,this.ufoSystem,this.grandRose,
       this.giantBloom,this.satellite,this.planet,this.wishingStar,this.fireflySwarm,
       this.distantTrain,this.lighthouse,this.bannerPlane,this.paperLantern,this.musicNotes,
-      this.northStar,this.meteorImpact,this.deathStar,this.dragon,this.magicCarpet];
+      this.northStar,this.meteorImpact,this.deathStar,this.dragon,this.magicCarpet,
+      this.chillingDude,this.pikachu];
     for(const e of earlyEvents){if(e.timer!==undefined)e.timer=R(5,45);}
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
@@ -128,6 +130,7 @@ class Garden{
     // Creatures
     this.owl.update(dt);this.frogSystem.update(dt);this.snailSystem.update(dt);
     this.ladybugSystem.update(dt,this.time);this.cat.update(dt,this.time);this.dragonflySystem.update(dt,this.time);
+    this.chillingDude.update(dt,this.time);this.pikachu.update(dt,this.time);
 
     // Weather & rare events — max 2 major events at once to avoid clutter
     // Major events only tick timers when slots available; active ones always update
@@ -209,6 +212,8 @@ class Garden{
     this.ladybugSystem.draw();
     this.cat.draw();
     this.dragonflySystem.draw(this.time);
+    this.chillingDude.draw(this.time);
+    this.pikachu.draw(this.time);
     this.bigTree.drawCanopy(this.time);
     this.fireflies.draw(this.time);
     this.fireflySwarm.draw(this.time);
