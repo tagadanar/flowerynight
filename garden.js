@@ -134,11 +134,11 @@ class Garden{
 
     // Weather & rare events — max 2 major events at once to avoid clutter
     // Major events only tick timers when slots available; active ones always update
-    const mj=this._countMajor()<2;
+    const mj=this._countMajor()<3;
     // Always update (small visual, no slot needed)
     this.lightning.update(dt);
     this.paperLantern.update(dt,this.time);this.fireflySwarm.update(dt,this.time);
-    this.distantTrain.update(dt);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
+    this.distantTrain.update(dt,this.time);this.musicNotes.update(dt);this.lighthouse.update(dt);this.bannerPlane.update(dt);
     this.magicCarpet.update(dt,this.time);
     this.willOWisp.update(dt,this.time);this.grandRose.update(dt,this.time,this);this.giantBloom.update(dt,this.time,this);
     // Major events — gated (idle timers pause when 2 slots full)
@@ -187,7 +187,7 @@ class Garden{
     this.bannerPlane.draw();
     this.magicCarpet.draw(this.time);
     this.dragon.draw(this.time);
-    this.distantTrain.draw();
+    this.distantTrain.draw(this.time);
 
     // GROUND
     this.drawHills();
