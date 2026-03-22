@@ -206,7 +206,7 @@ class Moon{
     this.x+=this.speed*dt;
     if(this.x<W*.1)this.opacity=cl((this.x+this.size*2)/(W*.1),0,1);else if(this.x>W*.9)this.opacity=cl((W+this.size*2-this.x)/(W*.1),0,1);else this.opacity=1;
     this.y+=Math.sin(this.x/W*Math.PI)*.08*dt;
-    if(this.x>W+this.size*2){this.active=false;this.timer=R(40,90);}
+    if(this.x>W+this.size*2){this.active=false;this.timer=R(20,50);}
   }
   draw(){
     if(!this.active||this.opacity<.01)return;const a=this.opacity;
@@ -332,8 +332,8 @@ class MoonBiker{
 // SKY: COMET
 // ══════════════════════════════════════════
 class CometSystem{
-  constructor(){this.comets=[];this.timer=R(30,60);}
-  update(dt,time){this.timer-=dt;if(this.timer<=0){this.timer=R(40,80);const fl=Math.random()>.5;this.comets.push({x:fl?-30:W+30,y:R(HOR*.05,HOR*.45),vx:(fl?1:-1)*R(40,100),vy:R(-8,15),particles:[],life:R(8,16),hue:pick([200,220,170,45,280]),sat:R(40,80),lit:R(70,90),size:R(3,6)});}
+  constructor(){this.comets=[];this.timer=R(20,40);}
+  update(dt,time){this.timer-=dt;if(this.timer<=0){this.timer=R(25,50);const fl=Math.random()>.5;this.comets.push({x:fl?-30:W+30,y:R(HOR*.05,HOR*.45),vx:(fl?1:-1)*R(40,100),vy:R(-8,15),particles:[],life:R(8,16),hue:pick([200,220,170,45,280]),sat:R(40,80),lit:R(70,90),size:R(3,6)});}
     for(const c of this.comets){c.x+=c.vx*dt;c.y+=c.vy*dt;c.vy+=Math.sin(time*.3+c.hue)*3*dt;c.life-=dt;if(c.life>0&&Math.random()<dt*60)c.particles.push({x:c.x,y:c.y,vx:-c.vx*R(.01,.08)+R(-5,5),vy:R(-3,3),life:R(.8,2.5),size:R(1,3.5),a:1});for(const p of c.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;p.a=cl(p.life/.5,0,1);}c.particles=c.particles.filter(p=>p.life>0);}this.comets=this.comets.filter(c=>c.life>0||c.particles.length>0);}
   draw(){for(const c of this.comets){for(const p of c.particles){ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.a,0,6.28);ctx.fillStyle=hsl(c.hue,c.sat-10,c.lit,p.a*.5);ctx.fill();}if(c.life>0){const f=cl(c.life/2,0,1);ctx.beginPath();ctx.arc(c.x,c.y,c.size*5,0,6.28);ctx.fillStyle=hsl(c.hue,c.sat,c.lit,f*.12);ctx.fill();ctx.beginPath();ctx.arc(c.x,c.y,c.size,0,6.28);ctx.fillStyle=hsl(c.hue,c.sat-15,97,f*.9);ctx.fill();}}}
 }
@@ -342,8 +342,8 @@ class CometSystem{
 // SKY: SUPERNOVA
 // ══════════════════════════════════════════
 class SupernovaSystem{
-  constructor(){this.novas=[];this.timer=R(70,140);}
-  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(90,180);const n={x:R(W*.1,W*.9),y:R(HOR*.05,HOR*.55),time:0,duration:R(10,16),maxR:R(60,140),h1:pick([280,220,340,200,30]),h2:pick([45,300,180,60,350]),sat:R(50,80),lit:R(60,80),rings:RI(1,3),debris:[]};for(let i=0;i<RI(12,25);i++){const a=R(0,6.28);n.debris.push({angle:a,speed:R(15,80),dist:0,size:R(.5,2.5),hue:R(n.h1,n.h2)});}this.novas.push(n);}for(const n of this.novas){n.time+=dt;for(const d of n.debris)d.dist+=d.speed*dt;}this.novas=this.novas.filter(n=>n.time<n.duration);}
+  constructor(){this.novas=[];this.timer=R(35,70);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(45,90);const n={x:R(W*.1,W*.9),y:R(HOR*.05,HOR*.55),time:0,duration:R(10,16),maxR:R(60,140),h1:pick([280,220,340,200,30]),h2:pick([45,300,180,60,350]),sat:R(50,80),lit:R(60,80),rings:RI(1,3),debris:[]};for(let i=0;i<RI(12,25);i++){const a=R(0,6.28);n.debris.push({angle:a,speed:R(15,80),dist:0,size:R(.5,2.5),hue:R(n.h1,n.h2)});}this.novas.push(n);}for(const n of this.novas){n.time+=dt;for(const d of n.debris)d.dist+=d.speed*dt;}this.novas=this.novas.filter(n=>n.time<n.duration);}
   draw(){for(const n of this.novas){const t=n.time/n.duration;let I,r;if(t<.08){I=ease.out(t/.08);r=n.maxR*.1*I;}else if(t<.4){I=1;r=n.maxR*ease.out((t-.08)/.32);}else if(t<.65){I=1-(t-.4)/.25*.3;r=n.maxR;}else{I=.7*(1-ease.in((t-.65)/.35));r=n.maxR*(1+(t-.65)*.3);}if(I<.01)continue;ctx.save();ctx.translate(n.x,n.y);const ng=ctx.createRadialGradient(0,0,0,0,0,r);ng.addColorStop(0,hsl(n.h1,n.sat,n.lit+15,I*.35));ng.addColorStop(.3,hsl(n.h2,n.sat-10,n.lit,I*.2));ng.addColorStop(.6,hsl((n.h1+n.h2)/2,n.sat-20,n.lit-10,I*.1));ng.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(0,0,r,0,6.28);ctx.fillStyle=ng;ctx.fill();for(let ri=0;ri<n.rings;ri++){const rt=cl(t-ri*.08,0,1);if(rt<.05||rt>.7)continue;const rr=r*(1+ri*.2)*ease.out(rt/.7),ra=I*.25*(1-rt/.7);ctx.beginPath();ctx.arc(0,0,rr,0,6.28);ctx.strokeStyle=hsl(n.h1,n.sat,n.lit+10,ra);ctx.lineWidth=1.5-ri*.3;ctx.stroke();}if(t<.3){const ca=t<.08?I:(1-(t-.08)/.22)*.8;ctx.beginPath();ctx.arc(0,0,4+r*.05,0,6.28);ctx.fillStyle=`rgba(255,255,255,${ca})`;ctx.fill();ctx.beginPath();ctx.arc(0,0,15,0,6.28);ctx.fillStyle=`rgba(255,250,240,${ca*.3})`;ctx.fill();}for(const d of n.debris){const dx=Math.cos(d.angle)*d.dist,dy=Math.sin(d.angle)*d.dist;const da=I*cl(1-d.dist/(n.maxR*2),0,1);if(da<.02)continue;ctx.beginPath();ctx.arc(dx,dy,d.size,0,6.28);ctx.fillStyle=hsl(d.hue,n.sat,n.lit+10,da*.6);ctx.fill();}ctx.restore();}}
 }
 
@@ -364,12 +364,12 @@ class NebulaWisps{
 // SKY: AURORA BOREALIS (rare)
 // ══════════════════════════════════════════
 class Aurora{
-  constructor(){this.active=false;this.timer=R(80,160);this.time=0;this.duration=0;this.bands=[];}
+  constructor(){this.active=false;this.timer=R(45,90);this.time=0;this.duration=0;this.bands=[];}
   update(dt,time){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.time=0;this.duration=R(15,30);this.bands=[];
       const n=RI(3,6);for(let i=0;i<n;i++)this.bands.push({y:HOR*R(.15,.55),amplitude:R(15,40),wavelength:R(.002,.006),speed:R(.3,.8),hue:pick([140,160,120,180,280,300]),sat:R(40,70),lit:R(45,65),height:R(30,80),seed:R(0,1000)});
     }return;}
-    this.time+=dt;if(this.time>=this.duration){this.active=false;this.timer=R(100,200);}
+    this.time+=dt;if(this.time>=this.duration){this.active=false;this.timer=R(50,100);}
   }
   draw(time){
     if(!this.active)return;
@@ -405,10 +405,10 @@ class Aurora{
 // SKY: RAINBOW (rare)
 // ══════════════════════════════════════════
 class Rainbow{
-  constructor(){this.active=false;this.timer=R(60,120);this.time=0;this.duration=0;this.cx=0;this.cy=0;this.r=0;}
+  constructor(){this.active=false;this.timer=R(30,70);this.time=0;this.duration=0;this.cx=0;this.cy=0;this.r=0;}
   update(dt){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.time=0;this.duration=R(15,25);this.cx=R(W*.2,W*.8);this.cy=HOR+R(20,80);this.r=R(W*.25,W*.45);}return;}
-    this.time+=dt;if(this.time>=this.duration){this.active=false;this.timer=R(90,180);}
+    this.time+=dt;if(this.time>=this.duration){this.active=false;this.timer=R(25,50);}
   }
   draw(){
     if(!this.active)return;
@@ -873,9 +873,9 @@ class WaveEvent{
 // RARE: CHERRY BLOSSOM STORM (every 3-6 min)
 // ══════════════════════════════════════════
 class BlossomStorm{
-  constructor(){this.active=false;this.timer=R(180,360);this.petals=[];}
+  constructor(){this.active=false;this.timer=R(40,80);this.petals=[];}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(180,360);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(90,180);
       const dir=Math.random()>.5?1:-1;
       for(let i=0;i<120;i++){
         const delay=R(0,2);
@@ -928,10 +928,10 @@ class BlossomStorm{
 // ══════════════════════════════════════════
 const GRAND_ROSE_SP={n:'grandrose',pc:[8,12],pt:'cupped',ps:[22,32],ly:[5,7],pl:'rose',cs:.12,sc:[0,0]};
 class GrandRose{
-  constructor(){this.timer=R(480,900);this.rose=null;}
+  constructor(){this.timer=R(45,120);this.rose=null;}
   update(dt,time,garden){
     if(this.rose){this.rose.update(dt,time);if(this.rose.isDead)this.rose=null;return;}
-    this.timer-=dt;if(this.timer<=0){this.timer=R(480,900);
+    this.timer-=dt;if(this.timer<=0){this.timer=R(45,120);
       const x=R(W*.15,W*.85),y=R(HOR+60,H*.82);
       this.rose=new Flower(x,y,R(2.5,3.5),GRAND_ROSE_SP);
       this.rose.fullDur=R(35,60);this.rose.bloomDur=R(6,10);this.rose.stemDur=R(3,5);this.rose.wiltDur=R(5,9);
@@ -950,12 +950,12 @@ class GrandRose{
 // RARE: GIANT BLOOM (every 3-6 min)
 // ══════════════════════════════════════════
 class GiantBloom{
-  constructor(){this.timer=R(180,360);this.giant=null;}
+  constructor(){this.timer=R(90,180);this.giant=null;}
   update(dt,time,garden){
     if(this.giant){this.giant.update(dt,time);if(this.giant.isDead)this.giant=null;return;}
     this.timer-=dt;
     if(this.timer<=0){
-      this.timer=R(180,360);
+      this.timer=R(90,180);
       const x=R(W*.2,W*.8),y=R(HOR+60,H*.85);
       this.giant=new Flower(x,y,R(2.8,4));
       this.giant.fullDur=R(25,45); // lives longer
@@ -970,9 +970,9 @@ class GiantBloom{
 // VERY RARE: LANTERN FESTIVAL (every 8-15 min)
 // ══════════════════════════════════════════
 class LanternFestival{
-  constructor(){this.active=false;this.timer=R(480,900);this.lanterns=[];}
+  constructor(){this.active=false;this.timer=R(45,120);this.lanterns=[];}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(480,900);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);
       const count=RI(18,35);
       for(let i=0;i<count;i++){
         this.lanterns.push({
@@ -1046,9 +1046,9 @@ class LanternFestival{
 // VERY RARE: WILL-O-THE-WISP (every 8-15 min)
 // ══════════════════════════════════════════
 class WillOWisp{
-  constructor(){this.active=false;this.timer=R(480,900);this.wisp=null;this.trail=[];}
+  constructor(){this.active=false;this.timer=R(45,120);this.wisp=null;this.trail=[];}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(480,900);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);
       this.wisp={x:R(W*.1,W*.9),y:R(HOR+30,H*.75),life:R(12,22),maxLife:0,
         seed:R(0,1000),hue:pick([160,180,200,140,100,280]),sat:R(50,80),lit:R(65,85),
         size:R(5,9),speed:R(20,45),
@@ -1109,9 +1109,9 @@ class WillOWisp{
 // VERY RARE: HOT AIR BALLOON (every 12-20 min)
 // ══════════════════════════════════════════
 class HotAirBalloon{
-  constructor(){this.active=false;this.timer=R(720,1200);this.balloon=null;}
+  constructor(){this.active=false;this.timer=R(40,90);this.balloon=null;}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(720,1200);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);
       const fromLeft=Math.random()>.5;
       const colors=[];const nc=RI(4,6);
       for(let i=0;i<nc;i++)colors.push({h:R(0,360),s:R(50,90),l:R(45,70)});
@@ -1187,9 +1187,9 @@ class HotAirBalloon{
 // ULTRA RARE: SKY WHALE (every 15-30 min)
 // ══════════════════════════════════════════
 class SkyWhale{
-  constructor(){this.active=false;this.timer=R(900,1800);this.whale=null;this.sparkles=[];}
+  constructor(){this.active=false;this.timer=R(360,720);this.whale=null;this.sparkles=[];}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(900,1800);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(360,720);
       const fromLeft=Math.random()>.5;
       this.whale={
         x:fromLeft?-200:W+200,y:R(HOR*.12,HOR*.5),
@@ -1282,9 +1282,9 @@ class SkyWhale{
 // ULTRA RARE: THE GREAT BLOOM (every 15-25 min)
 // ══════════════════════════════════════════
 class GreatBloom{
-  constructor(){this.timer=R(900,1500);this.phase='idle';this.phaseTime=0;}
+  constructor(){this.timer=R(360,720);this.phase='idle';this.phaseTime=0;}
   update(dt,time,garden){
-    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='wilt';this.phaseTime=0;this.timer=R(900,1500);}return;}
+    if(this.phase==='idle'){this.timer-=dt;if(this.timer<=0){this.phase='wilt';this.phaseTime=0;this.timer=R(360,720);}return;}
     this.phaseTime+=dt;
     if(this.phase==='wilt'){
       // Accelerate all flowers to wilt
@@ -1316,9 +1316,9 @@ class GreatBloom{
 // ULTRA RARE: ECLIPSE (every 20-40 min)
 // ══════════════════════════════════════════
 class Eclipse{
-  constructor(){this.active=false;this.timer=R(1200,2400);this.time=0;this.duration=0;this.darkX=0;this.darkY=0;}
+  constructor(){this.active=false;this.timer=R(45,120);this.time=0;this.duration=0;this.darkX=0;this.darkY=0;}
   update(dt){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(1200,2400);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);
       this.time=0;this.duration=R(12,20);
       this.darkX=R(W*.3,W*.7);this.darkY=R(HOR*.15,HOR*.4);
     }return;}
@@ -1356,9 +1356,9 @@ class Eclipse{
 // LEGENDARY: UFO (every 20-45 min)
 // ══════════════════════════════════════════
 class UFO{
-  constructor(){this.active=false;this.timer=R(1200,2700);this.ufo=null;}
+  constructor(){this.active=false;this.timer=R(45,120);this.ufo=null;}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(1200,2700);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);
       const fromLeft=Math.random()>.5;
       this.ufo={
         x:fromLeft?-30:W+30,y:R(HOR*.08,HOR*.4),
@@ -1410,9 +1410,9 @@ class UFO{
 // LEGENDARY: SNOWFALL (every 30-60 min)
 // ══════════════════════════════════════════
 class Snowfall{
-  constructor(){this.active=false;this.timer=R(1800,3600);this.flakes=[];this.time=0;this.duration=0;}
+  constructor(){this.active=false;this.timer=R(600,1080);this.flakes=[];this.time=0;this.duration=0;}
   update(dt,time){
-    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(1800,3600);
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1080);
       this.time=0;this.duration=R(18,30);this.flakes=[];
       for(let i=0;i<140;i++){
         this.flakes.push({
@@ -1478,8 +1478,8 @@ class MilkyWay{
 // SKY: SATELLITE
 // ══════════════════════════════════════════
 class Satellite{
-  constructor(){this.active=false;this.timer=R(180,300);}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(180,300);const fl=Math.random()>.5;this.x=fl?-10:W+10;this.y=R(HOR*.05,HOR*.5);this.vx=(fl?1:-1)*R(50,90);this.vy=R(-3,3);}return;}this.x+=this.vx*dt;this.y+=this.vy*dt;if(this.x<-20||this.x>W+20)this.active=false;}
+  constructor(){this.active=false;this.timer=R(60,180);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(60,180);const fl=Math.random()>.5;this.x=fl?-10:W+10;this.y=R(HOR*.05,HOR*.5);this.vx=(fl?1:-1)*R(50,90);this.vy=R(-3,3);}return;}this.x+=this.vx*dt;this.y+=this.vy*dt;if(this.x<-20||this.x>W+20)this.active=false;}
   draw(){if(!this.active)return;ctx.beginPath();ctx.arc(this.x,this.y,1,0,6.28);ctx.fillStyle='rgba(255,255,255,.65)';ctx.fill();}
 }
 
@@ -1487,8 +1487,8 @@ class Satellite{
 // SKY: PLANET TRANSIT
 // ══════════════════════════════════════════
 class PlanetTransit{
-  constructor(){this.active=false;this.timer=R(300,600);}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.x=-15;this.y=R(HOR*.08,HOR*.45);this.speed=R(3,8);this.size=R(3,5.5);this.hue=pick([30,45,200,350,15]);this.ring=Math.random()>.6;}return;}this.x+=this.speed*dt;if(this.x>W+20)this.active=false;}
+  constructor(){this.active=false;this.timer=R(40,90);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);this.x=-15;this.y=R(HOR*.08,HOR*.45);this.speed=R(3,8);this.size=R(3,5.5);this.hue=pick([30,45,200,350,15]);this.ring=Math.random()>.6;}return;}this.x+=this.speed*dt;if(this.x>W+20)this.active=false;}
   draw(){if(!this.active)return;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,6.28);ctx.fillStyle=hsl(this.hue,40,65,.75);ctx.fill();if(this.ring){ctx.beginPath();ctx.ellipse(this.x,this.y,this.size*2.2,this.size*.35,.3,0,6.28);ctx.strokeStyle=hsl(this.hue,30,72,.35);ctx.lineWidth=.8;ctx.stroke();}}
 }
 
@@ -1504,8 +1504,8 @@ class BinaryStars{
 // SKY: WISHING STAR
 // ══════════════════════════════════════════
 class WishingStar{
-  constructor(){this.active=false;this.timer=R(200,400);this.time=0;this.phase='fly';this.trail=[];}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(200,400);this.time=0;this.phase='fly';this.x=R(W*.1,W*.8);this.y=R(HOR*.05,HOR*.35);this.vx=R(100,250);this.vy=R(30,80);this.trail=[];this.pauseAt=R(.5,1);this.pauseDur=R(1.5,2.5);}return;}
+  constructor(){this.active=false;this.timer=R(40,80);this.time=0;this.phase='fly';this.trail=[];}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(90,180);this.time=0;this.phase='fly';this.x=R(W*.1,W*.8);this.y=R(HOR*.05,HOR*.35);this.vx=R(100,250);this.vy=R(30,80);this.trail=[];this.pauseAt=R(.5,1);this.pauseDur=R(1.5,2.5);}return;}
     this.time+=dt;if(this.phase==='fly'){this.trail.push({x:this.x,y:this.y,a:1});this.x+=this.vx*dt;this.y+=this.vy*dt;this.vx*=.97;this.vy*=.97;if(this.time>this.pauseAt){this.phase='pause';this.time=0;}}else if(this.phase==='pause'){if(this.time>this.pauseDur){this.phase='fade';this.time=0;}}else{if(this.time>1.5)this.active=false;}for(const t of this.trail)t.a-=dt*2;this.trail=this.trail.filter(t=>t.a>0);}
   draw(){if(!this.active)return;for(let i=1;i<this.trail.length;i++){const t=this.trail[i],p=this.trail[i-1];ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(t.x,t.y);ctx.strokeStyle=`rgba(255,255,255,${cl(t.a,0,1)*.4})`;ctx.lineWidth=1.5*t.a;ctx.stroke();}let a;if(this.phase==='fly')a=1;else if(this.phase==='pause')a=.8+.2*Math.sin(this.time*8);else a=1-this.time/1.5;if(a<.01)return;const glow=this.phase==='pause'?2:1;ctx.beginPath();ctx.arc(this.x,this.y,3*glow,0,6.28);ctx.fillStyle=`rgba(255,250,200,${a*.15*glow})`;ctx.fill();ctx.beginPath();ctx.arc(this.x,this.y,1.5,0,6.28);ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fill();}
 }
@@ -1514,8 +1514,8 @@ class WishingStar{
 // SKY: NORTH STAR PULSE
 // ══════════════════════════════════════════
 class NorthStarPulse{
-  constructor(){this.timer=R(180,360);this.pulsing=false;this.time=0;this.x=R(W*.3,W*.7);this.y=R(HOR*.05,HOR*.2);}
-  update(dt){if(!this.pulsing){this.timer-=dt;if(this.timer<=0){this.pulsing=true;this.time=0;this.timer=R(180,360);}return;}this.time+=dt;if(this.time>5)this.pulsing=false;}
+  constructor(){this.timer=R(90,180);this.pulsing=false;this.time=0;this.x=R(W*.3,W*.7);this.y=R(HOR*.05,HOR*.2);}
+  update(dt){if(!this.pulsing){this.timer-=dt;if(this.timer<=0){this.pulsing=true;this.time=0;this.timer=R(90,180);}return;}this.time+=dt;if(this.time>5)this.pulsing=false;}
   draw(){if(!this.pulsing)return;const a=Math.sin(this.time/5*Math.PI)*.6;ctx.beginPath();ctx.arc(this.x,this.y,6+a*4,0,6.28);ctx.fillStyle=`rgba(220,230,255,${a*.08})`;ctx.fill();ctx.beginPath();ctx.arc(this.x,this.y,2+a*2,0,6.28);ctx.fillStyle=`rgba(255,255,255,${.4+a*.5})`;ctx.fill();}
 }
 
@@ -1523,9 +1523,9 @@ class NorthStarPulse{
 // CREATURES: OWL
 // ══════════════════════════════════════════
 class Owl{
-  constructor(){this.active=false;this.timer=R(60,120);this.blinkTimer=R(3,8);this.isBlinking=false;this.blinkDur=0;this.perchTime=0;this.flying=false;this.fx=0;this.fy=0;this.fvx=0;}
+  constructor(){this.active=false;this.timer=R(30,60);this.blinkTimer=R(3,8);this.isBlinking=false;this.blinkDur=0;this.perchTime=0;this.flying=false;this.fx=0;this.fy=0;this.fvx=0;}
   update(dt){
-    if(this.flying){this.fx+=this.fvx*dt;this.fy+=Math.sin(this.fx*.02)*2*dt;if(this.fx<-50||this.fx>W+50){this.flying=false;this.active=false;this.timer=R(60,120);}return;}
+    if(this.flying){this.fx+=this.fvx*dt;this.fy+=Math.sin(this.fx*.02)*2*dt;if(this.fx<-50||this.fx>W+50){this.flying=false;this.active=false;this.timer=R(30,60);}return;}
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.x=R(W*.1,W*.9);this.y=R(HOR+10,HOR+60);this.perchTime=R(15,40);}return;}
     this.perchTime-=dt;this.blinkTimer-=dt;if(this.isBlinking){this.blinkDur-=dt;if(this.blinkDur<=0)this.isBlinking=false;}else if(this.blinkTimer<=0){this.isBlinking=true;this.blinkDur=R(.12,.2);this.blinkTimer=R(2,6);}
     if(this.perchTime<=0){this.flying=true;this.fx=this.x;this.fy=this.y;this.fvx=(Math.random()>.5?1:-1)*R(60,120);}
@@ -1575,10 +1575,10 @@ class LadybugSystem{
 // CREATURES: CAT SILHOUETTE
 // ══════════════════════════════════════════
 class CatSilhouette{
-  constructor(){this.active=false;this.timer=R(90,180);this.walking=false;this.walkDir=0;this.walkTime=0;this.sitTime=0;}
+  constructor(){this.active=false;this.timer=R(45,90);this.walking=false;this.walkDir=0;this.walkTime=0;this.sitTime=0;}
   update(dt,time){
     if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.x=R(W*.1,W*.9);this.y=R(HOR+25,H*.85);this.sitTime=R(15,35);this.walking=false;}return;}
-    this.tailPhase=time;this.sitTime-=dt;if(this.walking){this.x+=this.walkDir*15*dt;this.walkTime-=dt;if(this.walkTime<=0||this.x<-30||this.x>W+30){this.active=false;this.timer=R(90,180);}}else if(this.sitTime<=0){this.walking=true;this.walkDir=Math.random()>.5?1:-1;this.walkTime=R(5,12);}
+    this.tailPhase=time;this.sitTime-=dt;if(this.walking){this.x+=this.walkDir*15*dt;this.walkTime-=dt;if(this.walkTime<=0||this.x<-30||this.x>W+30){this.active=false;this.timer=R(25,50);}}else if(this.sitTime<=0){this.walking=true;this.walkDir=Math.random()>.5?1:-1;this.walkTime=R(5,12);}
   }
   draw(){if(!this.active)return;const s=8;ctx.save();ctx.translate(this.x,this.y);
     if(this.walking){if(this.walkDir<0)ctx.scale(-1,1);ctx.fillStyle='rgba(20,18,25,.75)';ctx.beginPath();ctx.ellipse(0,0,s*.8,s*.4,0,0,6.28);ctx.fill();ctx.beginPath();ctx.arc(-s*.5,-s*.5,s*.3,0,6.28);ctx.fill();ctx.beginPath();ctx.moveTo(-s*.6,-s*.7);ctx.lineTo(-s*.7,-s*1.1);ctx.lineTo(-s*.45,-s*.75);ctx.fill();ctx.beginPath();ctx.moveTo(-s*.35,-s*.7);ctx.lineTo(-s*.3,-s*1);ctx.lineTo(-s*.2,-s*.7);ctx.fill();const tw=Math.sin(this.tailPhase*3)*.4;ctx.beginPath();ctx.moveTo(s*.7,-.1*s);ctx.quadraticCurveTo(s*1.2,-s*.3+tw*s,s*1.4,-s*.6+tw*s);ctx.strokeStyle='rgba(20,18,25,.75)';ctx.lineWidth=1.5;ctx.stroke();}
@@ -1768,8 +1768,8 @@ class Pond{
 // GROUND: SPIDER WEB
 // ══════════════════════════════════════════
 class SpiderWeb{
-  constructor(){this.webs=[];this.timer=R(40,80);}
-  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(45,90);if(this.webs.length<2)this.webs.push({x:R(W*.1,W*.9),y:R(HOR+20,HOR+80),size:R(12,22),life:R(40,80),seed:R(0,1000)});}for(const w of this.webs)w.life-=dt;this.webs=this.webs.filter(w=>w.life>0);}
+  constructor(){this.webs=[];this.timer=R(25,50);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(25,50);if(this.webs.length<2)this.webs.push({x:R(W*.1,W*.9),y:R(HOR+20,HOR+80),size:R(12,22),life:R(40,80),seed:R(0,1000)});}for(const w of this.webs)w.life-=dt;this.webs=this.webs.filter(w=>w.life>0);}
   draw(time){for(const w of this.webs){const a=cl(w.life<3?w.life/3:1,0,1)*.35,s=w.size,sway=noise.get(w.seed+time*.15,0)*2;ctx.save();ctx.translate(w.x+sway,w.y);ctx.strokeStyle=`rgba(220,220,240,${a})`;ctx.lineWidth=.3;ctx.beginPath();for(let i=0;i<8;i++){const an=i*Math.PI/4;ctx.moveTo(0,0);ctx.lineTo(Math.cos(an)*s,Math.sin(an)*s);}ctx.stroke();ctx.beginPath();for(let r=s*.2;r<s;r+=s*.15){for(let i=0;i<8;i++){const a1=i*Math.PI/4,a2=(i+1)*Math.PI/4,wb=Math.sin(r+i)*.08;ctx.moveTo(Math.cos(a1)*(r+wb*s),Math.sin(a1)*(r+wb*s));ctx.lineTo(Math.cos(a2)*(r+wb*s),Math.sin(a2)*(r+wb*s));}}ctx.stroke();ctx.fillStyle=`rgba(200,220,255,${a*1.5})`;ctx.beginPath();for(let i=0;i<8;i++){const an=i*Math.PI/4;for(let r2=s*.3;r2<s;r2+=s*.25){const dx=Math.cos(an)*r2,dy=Math.sin(an)*r2;ctx.moveTo(dx+.8,dy);ctx.arc(dx,dy,.8,0,6.28);}}ctx.fill();ctx.restore();}}
 }
 
@@ -1858,8 +1858,8 @@ class FallenLog{
 // WEATHER: RAIN
 // ══════════════════════════════════════════
 class RainEvent{
-  constructor(){this.active=false;this.timer=R(600,1200);this.drops=[];this.time=0;this.duration=0;}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1200);this.time=0;this.duration=R(15,30);this.drops=[];for(let i=0;i<180;i++)this.drops.push({x:R(-20,W+20),y:R(-H,H),speed:R(300,500),len:R(8,18),drift:R(-15,5)});}return;}this.time+=dt;const t=this.time/this.duration,I=t<.1?ease.out(t/.1):t>.8?1-ease.in((t-.8)/.2):1;for(const d of this.drops){d.y+=d.speed*I*dt;d.x+=d.drift*dt;if(d.y>H+10){d.y=-d.len;d.x=R(-20,W+20);}}if(this.time>=this.duration){this.active=false;this.drops=[];}}
+  constructor(){this.active=false;this.timer=R(40,90);this.drops=[];this.time=0;this.duration=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);this.time=0;this.duration=R(15,30);this.drops=[];for(let i=0;i<180;i++)this.drops.push({x:R(-20,W+20),y:R(-H,H),speed:R(300,500),len:R(8,18),drift:R(-15,5)});}return;}this.time+=dt;const t=this.time/this.duration,I=t<.1?ease.out(t/.1):t>.8?1-ease.in((t-.8)/.2):1;for(const d of this.drops){d.y+=d.speed*I*dt;d.x+=d.drift*dt;if(d.y>H+10){d.y=-d.len;d.x=R(-20,W+20);}}if(this.time>=this.duration){this.active=false;this.drops=[];}}
   draw(){if(!this.active)return;const t=this.time/this.duration,I=t<.1?ease.out(t/.1):t>.8?1-ease.in((t-.8)/.2):1;ctx.fillStyle=`rgba(100,120,140,${I*.04})`;ctx.fillRect(0,0,W,H);ctx.strokeStyle=`rgba(180,200,220,${I*.25})`;ctx.lineWidth=.5;ctx.beginPath();for(const d of this.drops){ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+d.drift*.03,d.y+d.len);}ctx.stroke();}
 }
 
@@ -1867,8 +1867,8 @@ class RainEvent{
 // WEATHER: DISTANT LIGHTNING
 // ══════════════════════════════════════════
 class DistantLightning{
-  constructor(){this.timer=R(120,300);this.flash=0;this.flashX=0;}
-  update(dt){this.timer-=dt;if(this.flash>0)this.flash-=dt;if(this.timer<=0){this.timer=R(120,300);this.flash=R(.1,.25);this.flashX=R(W*.1,W*.9);}}
+  constructor(){this.timer=R(40,90);this.flash=0;this.flashX=0;}
+  update(dt){this.timer-=dt;if(this.flash>0)this.flash-=dt;if(this.timer<=0){this.timer=R(40,90);this.flash=R(.1,.25);this.flashX=R(W*.1,W*.9);}}
   draw(){if(this.flash<=0)return;const a=this.flash/.25;const lg=ctx.createLinearGradient(0,HOR*.6,0,HOR);lg.addColorStop(0,'rgba(0,0,0,0)');lg.addColorStop(.5,`rgba(200,200,255,${a*.06})`);lg.addColorStop(1,`rgba(200,200,255,${a*.12})`);ctx.fillStyle=lg;ctx.fillRect(this.flashX-W*.15,HOR*.5,W*.3,HOR*.5);}
 }
 
@@ -1876,8 +1876,8 @@ class DistantLightning{
 // WEATHER: FOG BANK
 // ══════════════════════════════════════════
 class FogBank{
-  constructor(){this.active=false;this.timer=R(200,400);this.time=0;this.duration=0;this.blobs=[];}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(200,400);this.time=0;this.duration=R(20,40);this.x=-W*.3;this.blobs=[];for(let i=0;i<4;i++)this.blobs.push({ox:i*W*.25,oy:i*15,r:R(80,160)});}return;}this.time+=dt;this.x+=8*dt;if(this.time>=this.duration)this.active=false;}
+  constructor(){this.active=false;this.timer=R(40,80);this.time=0;this.duration=0;this.blobs=[];}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(90,180);this.time=0;this.duration=R(20,40);this.x=-W*.3;this.blobs=[];for(let i=0;i<4;i++)this.blobs.push({ox:i*W*.25,oy:i*15,r:R(80,160)});}return;}this.time+=dt;this.x+=8*dt;if(this.time>=this.duration)this.active=false;}
   draw(){if(!this.active)return;const t=this.time/this.duration,a=t<.15?ease.out(t/.15):t>.8?1-ease.in((t-.8)/.2):.35;for(const b of this.blobs){const fx=this.x+b.ox,fy=HOR+30+b.oy;const fg=ctx.createRadialGradient(fx,fy,0,fx,fy,b.r);fg.addColorStop(0,`rgba(160,170,150,${a*.08})`);fg.addColorStop(1,'rgba(160,170,150,0)');ctx.beginPath();ctx.arc(fx,fy,b.r,0,6.28);ctx.fillStyle=fg;ctx.fill();}}
 }
 
@@ -1894,8 +1894,8 @@ class WindGust{
 // RARE: PAPER LANTERN (single)
 // ══════════════════════════════════════════
 class PaperLanternSingle{
-  constructor(){this.active=false;this.timer=R(120,240);}
-  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(120,240);this.x=R(W*.2,W*.8);this.y=H*.85;this.vy=-12;this.seed=R(0,1000);this.life=R(20,35);}return;}this.x+=noise.get(this.seed+time*.05,0)*8*dt;this.y+=this.vy*dt;this.vy+=(-22-this.vy)*.01;this.life-=dt;if(this.life<=0||this.y<-30)this.active=false;}
+  constructor(){this.active=false;this.timer=R(45,120);}
+  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);this.x=R(W*.2,W*.8);this.y=H*.85;this.vy=-12;this.seed=R(0,1000);this.life=R(20,35);}return;}this.x+=noise.get(this.seed+time*.05,0)*8*dt;this.y+=this.vy*dt;this.vy+=(-22-this.vy)*.01;this.life-=dt;if(this.life<=0||this.y<-30)this.active=false;}
   draw(time){if(!this.active)return;const a=cl(this.life/3,0,1),s=6,flicker=.7+.3*Math.sin(time*7+this.seed);ctx.save();ctx.translate(this.x,this.y);ctx.globalAlpha=a;const gg=ctx.createRadialGradient(0,0,s*.3,0,0,s*3.5);gg.addColorStop(0,`rgba(255,180,60,${flicker*.15})`);gg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.arc(0,0,s*3.5,0,6.28);ctx.fillStyle=gg;ctx.fill();ctx.beginPath();ctx.moveTo(-s*.35,-s*.6);ctx.bezierCurveTo(-s*.4,-s*.3,-s*.4,s*.3,-s*.25,s*.5);ctx.lineTo(s*.25,s*.5);ctx.bezierCurveTo(s*.4,s*.3,s*.4,-s*.3,s*.35,-s*.6);ctx.closePath();ctx.fillStyle=`rgba(255,200,100,${flicker*.8})`;ctx.fill();ctx.restore();}
 }
 
@@ -1903,8 +1903,8 @@ class PaperLanternSingle{
 // RARE: FIREFLY SWARM
 // ══════════════════════════════════════════
 class FireflySwarm{
-  constructor(){this.active=false;this.timer=R(300,600);this.flies=[];this.time=0;this.phase='gather';}
-  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.time=0;this.phase='gather';this.cx=R(W*.2,W*.8);this.cy=R(HOR+30,H*.7);this.flies=[];for(let i=0;i<30;i++)this.flies.push({x:this.cx+R(-100,100),y:this.cy+R(-60,60),tx:0,ty:0,seed:R(0,1000)});}return;}
+  constructor(){this.active=false;this.timer=R(40,90);this.flies=[];this.time=0;this.phase='gather';}
+  update(dt,time){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);this.time=0;this.phase='gather';this.cx=R(W*.2,W*.8);this.cy=R(HOR+30,H*.7);this.flies=[];for(let i=0;i<30;i++)this.flies.push({x:this.cx+R(-100,100),y:this.cy+R(-60,60),tx:0,ty:0,seed:R(0,1000)});}return;}
     this.time+=dt;const pd=this.phase==='gather'?4:this.phase==='shape'?5:3;if(this.time>pd){if(this.phase==='gather'){this.phase='shape';this.time=0;const ga=Math.PI*(3-Math.sqrt(5));for(let i=0;i<this.flies.length;i++){const a=i*ga,r=Math.sqrt(i/this.flies.length)*25;this.flies[i].tx=this.cx+Math.cos(a)*r;this.flies[i].ty=this.cy+Math.sin(a)*r;}}else if(this.phase==='shape'){this.phase='scatter';this.time=0;for(const f of this.flies){f.tx=f.x+R(-120,120);f.ty=f.y+R(-80,80);}}else{this.active=false;return;}}
     for(const f of this.flies){const tx=this.phase==='gather'?this.cx+R(-20,20):f.tx,ty=this.phase==='gather'?this.cy+R(-15,15):f.ty;f.x+=(tx-f.x)*.03;f.y+=(ty-f.y)*.03;f.x+=noise.get(f.seed+time*.3,0)*5*dt;f.y+=noise.get(0,f.seed+time*.3)*4*dt;}}
   draw(time){if(!this.active)return;for(const f of this.flies){const blink=Math.pow(Math.max(0,Math.sin(time*2+f.seed)),2);ctx.beginPath();ctx.arc(f.x,f.y,1.5,0,6.28);ctx.fillStyle=`rgba(180,220,80,${blink*.7})`;ctx.fill();if(blink>.5){ctx.beginPath();ctx.arc(f.x,f.y,4,0,6.28);ctx.fillStyle=`rgba(180,220,80,${blink*.1})`;ctx.fill();}}}
@@ -1914,8 +1914,8 @@ class FireflySwarm{
 // RARE: DISTANT TRAIN
 // ══════════════════════════════════════════
 class DistantTrain{
-  constructor(){this.active=false;this.timer=R(300,600);this.cars=0;}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.cars=RI(4,8);const fl=Math.random()>.5;this.x=fl?-this.cars*18-20:W+20;this.speed=(fl?1:-1)*R(15,30);this.y=HOR+R(2,12);}return;}this.x+=this.speed*dt;if((this.speed>0&&this.x>W+50)||(this.speed<0&&this.x<-this.cars*18-50))this.active=false;}
+  constructor(){this.active=false;this.timer=R(40,90);this.cars=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);this.cars=RI(4,8);const fl=Math.random()>.5;this.x=fl?-this.cars*18-20:W+20;this.speed=(fl?1:-1)*R(15,30);this.y=HOR+R(2,12);}return;}this.x+=this.speed*dt;if((this.speed>0&&this.x>W+50)||(this.speed<0&&this.x<-this.cars*18-50))this.active=false;}
   draw(){if(!this.active)return;ctx.save();ctx.translate(this.x,this.y);for(let i=0;i<this.cars;i++){const cx=i*16;ctx.fillStyle='rgba(30,25,20,.25)';ctx.fillRect(cx,0,14,5);ctx.fillStyle='rgba(255,220,140,.2)';ctx.fillRect(cx+2,1,3,2.5);ctx.fillRect(cx+7,1,3,2.5);ctx.fillStyle='rgba(40,35,25,.25)';ctx.beginPath();ctx.arc(cx+3,5.5,1.2,0,6.28);ctx.arc(cx+11,5.5,1.2,0,6.28);ctx.fill();}ctx.restore();}
 }
 
@@ -1923,8 +1923,8 @@ class DistantTrain{
 // RARE: MUSIC NOTES
 // ══════════════════════════════════════════
 class MusicNotes{
-  constructor(){this.notes=[];this.timer=R(120,240);}
-  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(120,240);const x=R(W*.1,W*.9),y=R(HOR+40,H*.8);for(let i=0;i<RI(3,6);i++)this.notes.push({x:x+R(-10,10),y,vx:R(-8,8),vy:R(-20,-35),life:R(3,6),size:R(3,5),hue:pick([45,200,300,340]),delay:i*R(.3,.6)});}for(const n of this.notes){if(n.delay>0){n.delay-=dt;continue;}n.x+=n.vx*dt;n.y+=n.vy*dt;n.life-=dt;}this.notes=this.notes.filter(n=>n.life>0||n.delay>0);}
+  constructor(){this.notes=[];this.timer=R(45,120);}
+  update(dt){this.timer-=dt;if(this.timer<=0){this.timer=R(45,120);const x=R(W*.1,W*.9),y=R(HOR+40,H*.8);for(let i=0;i<RI(3,6);i++)this.notes.push({x:x+R(-10,10),y,vx:R(-8,8),vy:R(-20,-35),life:R(3,6),size:R(3,5),hue:pick([45,200,300,340]),delay:i*R(.3,.6)});}for(const n of this.notes){if(n.delay>0){n.delay-=dt;continue;}n.x+=n.vx*dt;n.y+=n.vy*dt;n.life-=dt;}this.notes=this.notes.filter(n=>n.life>0||n.delay>0);}
   draw(){for(const n of this.notes){if(n.delay>0)continue;const a=cl(n.life/1.5,0,1)*.6,s=n.size;ctx.save();ctx.translate(n.x,n.y);ctx.fillStyle=hsl(n.hue,50,70,a);ctx.beginPath();ctx.ellipse(0,0,s*.4,s*.3,.3,0,6.28);ctx.fill();ctx.strokeStyle=hsl(n.hue,50,70,a);ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(s*.3,-s*.1);ctx.lineTo(s*.3,-s*1.2);ctx.stroke();ctx.restore();}}
 }
 
@@ -1932,8 +1932,8 @@ class MusicNotes{
 // RARE: LIGHTHOUSE
 // ══════════════════════════════════════════
 class Lighthouse{
-  constructor(){this.active=false;this.timer=R(240,480);this.side=1;this.sa=0;this.time=0;this.duration=0;}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(240,480);this.side=Math.random()>.5?1:-1;this.time=0;this.duration=R(15,30);}return;}this.time+=dt;this.sa+=.8*dt;if(this.time>=this.duration)this.active=false;}
+  constructor(){this.active=false;this.timer=R(45,120);this.side=1;this.sa=0;this.time=0;this.duration=0;}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(45,120);this.side=Math.random()>.5?1:-1;this.time=0;this.duration=R(15,30);}return;}this.time+=dt;this.sa+=.8*dt;if(this.time>=this.duration)this.active=false;}
   draw(){if(!this.active)return;const t=this.time/this.duration,a=t<.15?ease.out(t/.15):t>.85?1-ease.in((t-.85)/.15):.15;const bx=this.side>0?W+5:-5,by=HOR+10,beam=Math.sin(this.sa);if(beam<0)return;ctx.save();ctx.globalAlpha=a*beam;const angle=this.side>0?Math.PI-.4+beam*.3:.4+Math.PI-beam*.3;const len=W*.6,ex=bx+Math.cos(angle)*len,ey=by+Math.sin(angle)*len;const bg=ctx.createLinearGradient(bx,by,ex,ey);bg.addColorStop(0,'rgba(255,250,200,.06)');bg.addColorStop(.5,'rgba(255,250,200,.02)');bg.addColorStop(1,'rgba(0,0,0,0)');ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ex-25,ey);ctx.lineTo(ex+25,ey);ctx.closePath();ctx.fillStyle=bg;ctx.fill();ctx.restore();}
 }
 
@@ -1941,8 +1941,8 @@ class Lighthouse{
 // RARE: BANNER PLANE
 // ══════════════════════════════════════════
 class BannerPlane{
-  constructor(){this.active=false;this.timer=R(600,1200);}
-  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(600,1200);const fl=Math.random()>.5;this.x=fl?-180:W+180;this.y=R(HOR*.12,HOR*.4);this.vx=(fl?1:-1)*R(30,55);this.sway=0;}return;}
+  constructor(){this.active=false;this.timer=R(40,90);}
+  update(dt){if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(40,90);const fl=Math.random()>.5;this.x=fl?-180:W+180;this.y=R(HOR*.12,HOR*.4);this.vx=(fl?1:-1)*R(30,55);this.sway=0;}return;}
     this.x+=this.vx*dt;this.sway=Math.sin(this.x*.008)*3;if((this.vx>0&&this.x>W+200)||(this.vx<0&&this.x<-200))this.active=false;}
   draw(){if(!this.active)return;const py=this.y+this.sway;ctx.save();ctx.translate(this.x,py);if(this.vx<0)ctx.scale(-1,1);
     // Plane body
@@ -2215,7 +2215,7 @@ class Garden{
     if(this.flowerWaveTimer<=0){this.waves.push(new WaveEvent('flower_wave'));this.flowerWaveTimer=R(70,150);}
     // Meteor shower
     this.meteorTimer-=dt;
-    if(this.meteorTimer<=0){this.shootingStars.shower();this.meteorTimer=R(120,240);}
+    if(this.meteorTimer<=0){this.shootingStars.shower();this.meteorTimer=R(60,120);}
 
     for(const w of this.waves)w.update(dt,this);this.waves=this.waves.filter(w=>!w.done);
     for(const f of this.flowers)f.update(dt,this.time);this.flowers=this.flowers.filter(f=>!f.isDead);this.flowers.sort((a,b)=>a.y-b.y);
