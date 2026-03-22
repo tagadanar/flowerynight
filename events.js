@@ -1102,3 +1102,38 @@ class MagicCarpet{
     ctx.restore();
   }
 }
+
+// ══════════════════════════════════════════
+// RARE: SNOWFLAKE STORM (detailed hexagonal flakes)
+// ══════════════════════════════════════════
+class SnowflakeStorm{
+  constructor(){this.active=false;this.timer=R(300,600);this.flakes=[];this.time=0;this.duration=0;}
+  update(dt,time){
+    if(!this.active){this.timer-=dt;if(this.timer<=0){this.active=true;this.timer=R(300,600);this.time=0;this.duration=R(15,30);this.flakes=[];
+      for(let i=0;i<80;i++)this.flakes.push({x:R(-30,W+30),y:R(-H*.5,H),size:R(3,10),speed:R(12,35),drift:R(-12,12),rot:R(0,6.28),rs:R(-.5,.5),wobS:R(1,3),wobA:R(8,25),seed:R(0,1000),detail:Math.random()});}return;}
+    this.time+=dt;const t=this.time/this.duration;const I=t<.12?ease.out(t/.12):t>.8?1-ease.in((t-.8)/.2):1;
+    for(const f of this.flakes){f.y+=f.speed*I*dt;f.x+=f.drift*dt+Math.sin(time*f.wobS+f.seed)*f.wobA*dt;f.rot+=f.rs*dt;if(f.y>H+15){f.y=-15;f.x=R(-30,W+30);}}
+    if(this.time>=this.duration){this.active=false;this.flakes=[];}
+  }
+  draw(){
+    if(!this.active||this.flakes.length===0)return;
+    const t=this.time/this.duration;const I=t<.12?ease.out(t/.12):t>.8?1-ease.in((t-.8)/.2):1;
+    ctx.fillStyle=`rgba(180,200,240,${I*.04})`;ctx.fillRect(0,0,W,H);
+    for(const f of this.flakes){
+      const a=I*(.4+f.detail*.3);if(a<.03)continue;
+      ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot);ctx.globalAlpha=a;
+      ctx.strokeStyle='rgba(230,240,255,.8)';ctx.fillStyle='rgba(240,248,255,.3)';
+      const s=f.size;
+      ctx.lineWidth=s>6?.5:.3;ctx.lineCap='round';ctx.beginPath();
+      for(let i=0;i<6;i++){const an=i*1.047;const cs=Math.cos(an),sn=Math.sin(an);
+        ctx.moveTo(0,0);ctx.lineTo(cs*s,sn*s);
+        if(s>4){const bt=s*.55,bl=s*.4;
+          ctx.moveTo(cs*bt+sn*bl*.3,sn*bt-cs*bl*.3);ctx.lineTo(cs*bt,sn*bt);ctx.lineTo(cs*bt-sn*bl*.3,sn*bt+cs*bl*.3);
+          if(s>6){const bt2=s*.3,bl2=s*.25;
+            ctx.moveTo(cs*bt2+sn*bl2*.3,sn*bt2-cs*bl2*.3);ctx.lineTo(cs*bt2,sn*bt2);ctx.lineTo(cs*bt2-sn*bl2*.3,sn*bt2+cs*bl2*.3);}}}
+      ctx.stroke();
+      ctx.beginPath();ctx.arc(0,0,s*.12,0,6.28);ctx.fill();
+      if(s>7){ctx.beginPath();ctx.arc(0,0,s*1.5,0,6.28);ctx.fillStyle='rgba(220,235,255,.04)';ctx.fill();}
+      ctx.restore();}
+  }
+}

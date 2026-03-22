@@ -42,7 +42,7 @@ class Garden{
     this.paperLantern=new PaperLanternSingle();this.fireflySwarm=new FireflySwarm();
     this.distantTrain=new DistantTrain();this.musicNotes=new MusicNotes();this.lighthouse=new Lighthouse();this.bannerPlane=new BannerPlane();
     this.meteorImpact=new MeteorImpact();this.deathStar=new DeathStar();
-    this.dragon=new Dragon();this.magicCarpet=new MagicCarpet();
+    this.dragon=new Dragon();this.magicCarpet=new MagicCarpet();this.snowflakeStorm=new SnowflakeStorm();
 
     // All events can happen early — randomize initial timers to short values
     // Repeat timers (set when events end) keep their designed longer intervals
@@ -52,7 +52,7 @@ class Garden{
       this.giantBloom,this.satellite,this.planet,this.wishingStar,this.fireflySwarm,
       this.distantTrain,this.lighthouse,this.bannerPlane,this.paperLantern,this.musicNotes,
       this.northStar,this.meteorImpact,this.deathStar,this.dragon,this.magicCarpet,
-      this.chillingDude,this.pikachu];
+      this.chillingDude,this.pikachu,this.snowflakeStorm];
     for(const e of earlyEvents){if(e.timer!==undefined)e.timer=R(5,45);}
 
     this.ambientTimer=0;this.ambientInterval=R(1.5,3);
@@ -88,7 +88,7 @@ class Garden{
     if(this.blossomStorm.active)n++;if(this.lanternFestival.active)n++;if(this.windGust.active)n++;
     if(this.deathStar.phase!=='idle')n++;if(this.meteorImpact.phase!=='idle')n++;
     if(this.greatBloom.phase!=='idle')n++;if(this.skyWhale.active)n++;
-    if(this.hotAirBalloon.active)n++;if(this.ufoSystem.active)n++;if(this.dragon.active)n++;return n;}
+    if(this.hotAirBalloon.active)n++;if(this.ufoSystem.active)n++;if(this.dragon.active)n++;if(this.snowflakeStorm.active)n++;return n;}
   initGrass(){this.grass=[];for(let x=0;x<W;x+=R(5,12)){if(Math.random()>.3)this.grass.push(new GrassBlade(x));}this._renderHills();}
 
   update(dt){
@@ -158,6 +158,7 @@ class Garden{
     if(mj||this.meteorImpact.phase!=='idle')this.meteorImpact.update(dt,this.time,this);
     if(mj||this.deathStar.phase!=='idle')this.deathStar.update(dt,this.time,this);
     if(mj||this.dragon.active)this.dragon.update(dt,this.time,this);
+    if(mj||this.snowflakeStorm.active)this.snowflakeStorm.update(dt,this.time);
   }
 
   draw(){
@@ -232,6 +233,7 @@ class Garden{
     this.eclipse.draw();
     this.lightning.draw();
     this.snowfall.draw();
+    this.snowflakeStorm.draw();
     this.rainEvent.draw();
     // Cursor firefly
     if(mouseX>0&&mouseY>0){const pulse=.5+.5*Math.sin(this.time*4);ctx.beginPath();ctx.arc(mouseX,mouseY,8,0,6.28);ctx.fillStyle=`rgba(180,220,80,${pulse*.06})`;ctx.fill();ctx.beginPath();ctx.arc(mouseX,mouseY,2,0,6.28);ctx.fillStyle=`rgba(200,240,100,${pulse*.5})`;ctx.fill();}
