@@ -857,6 +857,29 @@ class BlossomStorm{
 }
 
 // ══════════════════════════════════════════
+// RARE: GRAND ROSE (every 8-15 min)
+// ══════════════════════════════════════════
+const GRAND_ROSE_SP={n:'grandrose',pc:[8,12],pt:'cupped',ps:[22,32],ly:[5,7],pl:'rose',cs:.12,sc:[0,0]};
+class GrandRose{
+  constructor(){this.timer=R(480,900);this.rose=null;}
+  update(dt,time,garden){
+    if(this.rose){this.rose.update(dt,time);if(this.rose.isDead)this.rose=null;return;}
+    this.timer-=dt;if(this.timer<=0){this.timer=R(480,900);
+      const x=R(W*.15,W*.85),y=R(HOR+60,H*.82);
+      this.rose=new Flower(x,y,R(2.5,3.5),GRAND_ROSE_SP);
+      this.rose.fullDur=R(35,60);this.rose.bloomDur=R(6,10);this.rose.stemDur=R(3,5);this.rose.wiltDur=R(5,9);
+      // Override petal offsets for tighter, more detailed layering
+      for(let l=0;l<this.rose.layers;l++){for(let i=0;i<this.rose.petalCount;i++){this.rose.pOff[l][i].a=R(-.05,.05);this.rose.pOff[l][i].s=R(.92,1.08);this.rose.pOff[l][i].d=R(0,.15+l*.06);}}
+      // Richer color variation per layer — inner petals lighter
+      for(let l=0;l<this.rose.layers;l++){for(let i=0;i<this.rose.petalCount;i++){this.rose.petalColors[l][i].l+=l*3;this.rose.petalColors[l][i].s-=l*2;}}
+      // Rebuild cached petal paths with new offsets
+      this.rose._petPaths=[];for(let l=0;l<this.rose.layers;l++){const lp=[];const ls=1-l*.1;for(let i=0;i<this.rose.petalCount;i++)lp.push(petalPath(l<2?'ruffled':'cupped',this.rose.petalSize*ls*this.rose.pOff[l][i].s));this.rose._petPaths.push(lp);}
+      garden.flowers.push(this.rose);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
 // RARE: GIANT BLOOM (every 3-6 min)
 // ══════════════════════════════════════════
 class GiantBloom{
@@ -1848,7 +1871,7 @@ class Garden{
 
     // Rare events
     this.blossomStorm=new BlossomStorm();
-    this.giantBloom=new GiantBloom();
+    this.grandRose=new GrandRose();this.giantBloom=new GiantBloom();
     this.lanternFestival=new LanternFestival();
     this.willOWisp=new WillOWisp();
     this.hotAirBalloon=new HotAirBalloon();
@@ -1933,7 +1956,7 @@ class Garden{
 
     // Rare events
     this.blossomStorm.update(dt,this.time);
-    this.giantBloom.update(dt,this.time,this);
+    this.grandRose.update(dt,this.time,this);this.giantBloom.update(dt,this.time,this);
     this.lanternFestival.update(dt,this.time);
     this.willOWisp.update(dt,this.time);
     this.hotAirBalloon.update(dt,this.time);
